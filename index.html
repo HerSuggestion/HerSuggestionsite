@@ -16,6 +16,9 @@
     .list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
     .list li { padding:10px; border:1px solid #222; border-radius:10px }
     a { color:#69b4ff; text-decoration:none }
+    #msg { margin-top:10px; font-weight:bold; }
+    .success { color:#4CAF50; }
+    .error { color:#f44336; }
   </style>
 </head>
 <body>
@@ -50,7 +53,6 @@
 
 <script>
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwehlwjPE4WXSKamnsnywAMbnYTQlWsG8duCzgyehW1136MZ6E9s_hqoKUtRv0fLJgB/exec';
-
 const form = document.getElementById('form');
 const msg = document.getElementById('msg');
 const played = document.getElementById('played');
@@ -59,14 +61,14 @@ const suggested = document.getElementById('suggested');
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   msg.textContent = 'Submitting…';
-
+  msg.className = '';
+  
   const payload = {
     song: document.getElementById('song').value.trim(),
     artist: document.getElementById('artist').value.trim(),
     link: document.getElementById('link').value.trim(),
     username: document.getElementById('username').value.trim()
   };
-
   try {
     const res = await fetch(ENDPOINT, {
       method: 'POST',
@@ -75,19 +77,26 @@ form.addEventListener('submit', async (e) => {
     });
     const j = await res.json();
     if (j.ok) {
-      msg.textContent = 'Added!';
+      msg.textContent = 'Song added!';
+      msg.className = 'success';
       form.reset();
       load();
     } else {
       msg.textContent = 'Error: ' + (j.error || 'try again');
+      msg.className = 'error';
     }
-  } catch (e) {
+  } catch(e) {
     msg.textContent = 'Network error';
+    msg.className = 'error';
   }
+  
+  setTimeout(() => { msg.textContent = ''; msg.className = ''; }, 3000);
 });
 
 function escapeHtml(s) {
-  return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  return String(s||'').replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[m]);
 }
 
 function render(ul, items) {
@@ -102,7 +111,7 @@ function render(ul, items) {
 
 async function load() {
   try {
-    const res = await fetch(ENDPOINT + '?V1=1'); // Changed from v2 to V1
+    const res = await fetch(ENDPOINT + '?v1=1'); // updated to v1
     const j = await res.json();
     render(suggested, j.pending || []);
     render(played, j.played || []);
