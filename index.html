@@ -16,7 +16,6 @@
     .list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
     .list li { padding:10px; border:1px solid #222; border-radius:10px }
     a { color:#69b4ff; text-decoration:none }
-    pre.debug { background:#111; border:1px solid #222; padding:10px; border-radius:10px; overflow:auto }
   </style>
 </head>
 <body>
@@ -47,13 +46,6 @@
       <h2>Today's Suggested Songs</h2>
       <ul id="suggested" class="list"></ul>
     </div>
-
-    <!-- Debug panel (shows last JSON from /exec) -->
-    <div class="card">
-      <h2>Debug</h2>
-      <div>Open your browser console (F12) for detailed logs.</div>
-      <pre id="debug" class="debug">{ waiting for data… }</pre>
-    </div>
   </div>
 
 <script>
@@ -63,12 +55,6 @@ const form = document.getElementById('form');
 const msg = document.getElementById('msg');
 const played = document.getElementById('played');
 const suggested = document.getElementById('suggested');
-const debugEl = document.getElementById('debug');
-
-// Global error hook (helps catch any JS errors)
-window.addEventListener('error', (e) => {
-  console.error('JS error:', e.message, e.filename+':'+e.lineno+':'+e.colno);
-});
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -82,28 +68,20 @@ form.addEventListener('submit', async (e) => {
   };
 
   try {
-    console.log('[POST] to', ENDPOINT, 'payload:', payload);
     const res = await fetch(ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-    console.log('[POST] status', res.status, res.statusText);
-    const text = await res.text();
-    console.log('[POST] raw response:', text);
-    let j = {};
-    try { j = JSON.parse(text); } catch (err) {
-      console.warn('POST response was not JSON, showing raw text.');
-    }
+    const j = await res.json();
     if (j.ok) {
       msg.textContent = 'Added!';
       form.reset();
-      await load();
+      load();
     } else {
-      msg.textContent = 'Error: ' + (j.error || text || 'try again');
+      msg.textContent = 'Error: ' + (j.error || 'try again');
     }
   } catch (e) {
-    console.error('[POST] network error:', e);
     msg.textContent = 'Network error';
   }
 });
@@ -123,27 +101,13 @@ function render(ul, items) {
 }
 
 async function load() {
-  const url = ENDPOINT + '?V1=1'; // your backend expects V1=1
   try {
-    console.log('[GET] to', url);
-    const res = await fetch(url, { cache: 'no-store' });
-    console.log('[GET] status', res.status, res.statusText);
-    const text = await res.text();
-    console.log('[GET] raw response:', text);
-    let j = {};
-    try { j = JSON.parse(text); } catch (err) {
-      console.warn('GET response was not JSON; showing raw text in debug panel.');
-      debugEl.textContent = text;
-      suggested.innerHTML = played.innerHTML = '<li><em>Failed to load</em></li>';
-      return;
-    }
-    debugEl.textContent = JSON.stringify(j, null, 2);
+    const res = await fetch(ENDPOINT + '?V1=1'); // Changed from v2 to V1
+    const j = await res.json();
     render(suggested, j.pending || []);
     render(played, j.played || []);
   } catch (e) {
-    console.error('[GET] network error:', e);
     suggested.innerHTML = played.innerHTML = '<li><em>Failed to load</em></li>';
-    debugEl.textContent = 'Network error: ' + e.message;
   }
 }
 
