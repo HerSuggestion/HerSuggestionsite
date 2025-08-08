@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Today's Songs</title>
   <style>
-    body { background:#0b0b0b; color:#f5f5f5; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; margin:0 }
+    body { background:#0b0b0b; color:#f5f5f5; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin:0 }
     .header { background:#1976d2; padding:28px 16px; text-align:center }
     .header h1 { margin:0 0 8px; font-size:40px }
     .wrap { max-width:960px; margin:0 auto; padding:18px 16px; display:grid; gap:22px }
@@ -23,6 +23,7 @@
     <h1>Today's Songs</h1>
     <div>The songs listed on here are in no particular order. The list is cleared every night.</div>
   </div>
+
   <div class="wrap">
     <div class="card">
       <h2>Suggest a Song</h2>
@@ -35,10 +36,12 @@
       </form>
       <div id="msg"></div>
     </div>
+
     <div class="card">
       <h2>Today's Played Songs</h2>
       <ul id="played" class="list"></ul>
     </div>
+
     <div class="card">
       <h2>Today's Suggested Songs</h2>
       <ul id="suggested" class="list"></ul>
@@ -47,6 +50,7 @@
 
 <script>
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbw7CnafwqLdcyVPZP8kqfMrm7n2T6FTJuwQ-V-JIGRz67exl938arDje3M4bCdl83bH/exec';
+
 const form = document.getElementById('form');
 const msg = document.getElementById('msg');
 const played = document.getElementById('played');
@@ -55,12 +59,14 @@ const suggested = document.getElementById('suggested');
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   msg.textContent = 'Submitting…';
+
   const payload = {
     song: document.getElementById('song').value.trim(),
     artist: document.getElementById('artist').value.trim(),
     link: document.getElementById('link').value.trim(),
     username: document.getElementById('username').value.trim()
   };
+
   try {
     const res = await fetch(ENDPOINT, {
       method: 'POST',
@@ -75,27 +81,32 @@ form.addEventListener('submit', async (e) => {
     } else {
       msg.textContent = 'Error: ' + (j.error || 'try again');
     }
-  } catch(e) {
+  } catch (e) {
     msg.textContent = 'Network error';
   }
 });
 
-function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
 
 function render(ul, items) {
-  ul.innerHTML = items.length ? items.map(i => `<li><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}
-    ${i.username ? ' ('+escapeHtml(i.username)+')' : ''}
-    ${i.link ? ' — <a href="${i.link}" target="_blank" rel="noopener">link</a>' : ''}</li>`).join('')
+  ul.innerHTML = items.length
+    ? items.map(i => `<li><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}${
+        i.username ? ' ('+escapeHtml(i.username)+')' : ''
+      }${
+        i.link ? ' — <a href="'+i.link+'" target="_blank" rel="noopener">link</a>' : ''
+      }</li>`).join('')
     : '<li><em>None yet.</em></li>';
 }
 
 async function load() {
   try {
-    const res = await fetch(ENDPOINT + '?v2=1');
+    const res = await fetch(ENDPOINT + '?v2=1'); // keep lowercase v2
     const j = await res.json();
-    render(suggested, (j.pending || []));
-    render(played, (j.played || []));
-  } catch(e) {
+    render(suggested, j.pending || []);
+    render(played, j.played || []);
+  } catch (e) {
     suggested.innerHTML = played.innerHTML = '<li><em>Failed to load</em></li>';
   }
 }
@@ -104,3 +115,5 @@ load();
 </script>
 </body>
 </html>
+
+
