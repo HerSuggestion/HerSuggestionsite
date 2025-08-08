@@ -1,0 +1,35 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin</title></head>
+<body style="background:#0b0b0b;color:#f5f5f5;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
+  <h1>Admin</h1>
+  <input id="pass" placeholder="Passcode">
+  <button id="loadBtn">Load</button>
+  <ul id="list"></ul>
+<script>
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbw7CnafwqLdcyVPZP8kqfMrm7n2T6FTJuwQ-V-JIGRz67exl938arDje3M4bCdl83bH/exec';
+const passEl = document.getElementById('pass');
+const list = document.getElementById('list');
+document.getElementById('loadBtn').onclick = load;
+
+async function load(){
+  list.innerHTML = '<li>Loading…</li>';
+  try {
+    const res = await fetch(ENDPOINT + '?v2=1');
+    const j = await res.json();
+    const items = j.pending || [];
+    list.innerHTML = items.length ? items.map(i => `<li>\${i.row}: <b>\${i.song}</b> — \${i.artist} 
+      <button onclick="mark(\${i.row})">Mark played</button></li>`).join('') : '<li>No pending</li>';
+  } catch(e) { list.innerHTML = '<li>Failed to load</li>'; }
+}
+
+async function mark(row){
+  const res = await fetch(ENDPOINT, {
+    method:'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ action:'mark', row, pass: passEl.value })
+  });
+  const j = await res.json();
+  if (j.ok) load(); else alert(j.error || 'Failed');
+}
+</script>
+</body></html>
