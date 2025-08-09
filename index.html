@@ -16,9 +16,8 @@
     .list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
     .list li { padding:10px; border:1px solid #222; border-radius:10px }
     a { color:#69b4ff; text-decoration:none }
-    #msg { margin-top:10px; font-weight:bold; }
-    .success { color: #4CAF50; }
-    .error { color: #f44336; }
+    .success { color: #4caf50; margin-top: 8px; }
+    .error { color: #ff5252; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -62,12 +61,14 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
   msg.textContent = 'Submitting…';
   msg.className = '';
+
   const payload = {
     song: document.getElementById('song').value.trim(),
     artist: document.getElementById('artist').value.trim(),
     link: document.getElementById('link').value.trim(),
     username: document.getElementById('username').value.trim()
   };
+
   try {
     const res = await fetch(ENDPOINT, {
       method: 'POST',
@@ -76,7 +77,7 @@ form.addEventListener('submit', async (e) => {
     });
     const j = await res.json();
     if (j.ok) {
-      msg.textContent = '✅ Added!';
+      msg.textContent = '✅ Added successfully!';
       msg.className = 'success';
       form.reset();
       load();
@@ -84,7 +85,7 @@ form.addEventListener('submit', async (e) => {
       msg.textContent = '❌ Error: ' + (j.error || 'try again');
       msg.className = 'error';
     }
-  } catch(e) {
+  } catch (e) {
     msg.textContent = '❌ Network error';
     msg.className = 'error';
   }
@@ -99,7 +100,7 @@ function render(ul, items) {
     ? items.map(i => `<li><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}${
         i.username ? ' ('+escapeHtml(i.username)+')' : ''
       }${
-        i.link ? ' — <a href="'+i.link+'" target="_blank" rel="noopener">link</a>' : ''
+        i.link ? ' — <a href="'+escapeHtml(i.link)+'" target="_blank" rel="noopener">link</a>' : ''
       }</li>`).join('')
     : '<li><em>None yet.</em></li>';
 }
@@ -110,7 +111,7 @@ async function load() {
     const j = await res.json();
     render(suggested, j.pending || []);
     render(played, j.played || []);
-  } catch(e) {
+  } catch (e) {
     suggested.innerHTML = played.innerHTML = '<li><em>Failed to load</em></li>';
   }
 }
@@ -119,6 +120,7 @@ load();
 </script>
 </body>
 </html>
+
 
 
 
