@@ -1,93 +1,92 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Admin - Today's Songs</title>
-<style>
-body { background:#0b0b0b; color:#f5f5f5; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin:0 }
-.header { background:#1976d2; padding:20px; text-align:center }
-.header h1 { margin:0; font-size:30px }
-.wrap { max-width:960px; margin:0 auto; padding:18px 16px; display:grid; gap:22px }
-.card { background:#141414; border:1px solid #222; border-radius:12px; padding:16px }
-button { font:inherit; padding:8px 12px; border-radius:8px; background:#1976d2; border:none; color:white; cursor:pointer }
-button:hover { background:#145ca1 }
-.list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
-.list li { padding:10px; border:1px solid #222; border-radius:10px; display:flex; justify-content:space-between; align-items:center }
-.success { color:#4caf50; margin-top:10px }
-.error { color:#f44336; margin-top:10px }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin - Today's Songs</title>
+  <style>
+    body { background:#0b0b0b; color:#f5f5f5; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin:0 }
+    .header { background:#1976d2; padding:20px; text-align:center }
+    .wrap { max-width:960px; margin:0 auto; padding:18px 16px; display:grid; gap:22px }
+    .card { background:#141414; border:1px solid #222; border-radius:12px; padding:16px }
+    .list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
+    .list li { padding:10px; border:1px solid #222; border-radius:10px; display:flex; justify-content:space-between; align-items:center }
+    button { padding:8px 12px; border-radius:8px; background:#1976d2; border:none; color:white; cursor:pointer }
+    .meta { opacity:.8; font-size:14px; }
+    #msg { font-weight:600 }
+    .success { color: #4caf50 }
+    .error { color: #f44336 }
+  </style>
 </head>
 <body>
-<div class="header">
-<h1>Admin Panel - Today's Songs</h1>
-<div>Manage pending and played songs. Auto-refresh every 5 seconds.</div>
-</div>
+  <div class="header">
+    <h1>Admin Panel</h1>
+    <div class="meta">Auto-refreshes every 5s</div>
+  </div>
 
-<div class="wrap">
-<div class="card">
-  <h2>Pending Songs</h2>
-  <ul id="pendingList" class="list"></ul>
-</div>
+  <div class="wrap">
+    <div id="msg"></div>
 
-<div class="card">
-  <h2>Played Songs</h2>
-  <ul id="playedList" class="list"></ul>
-</div>
-<div id="msg"></div>
-</div>
+    <div class="card">
+      <h2>Pending (<span id="countPending">0</span>)</h2>
+      <ul id="pending" class="list"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Played (<span id="countPlayed">0</span>)</h2>
+      <ul id="played" class="list"></ul>
+    </div>
+  </div>
 
 <script>
 const ENDPOINT = "https://script.google.com/macros/s/AKfycbwehlwjPE4WXSKamnsnywAMbnYTQlWsG8duCzgyehW1136MZ6E9s_hqoKUtRv0fLJgB/exec";
-
-const pendingList = document.getElementById('pendingList');
-const playedList = document.getElementById('playedList');
+const pendingEl = document.getElementById('pending');
+const playedEl = document.getElementById('played');
+const countPending = document.getElementById('countPending');
+const countPlayed = document.getElementById('countPlayed');
 const msg = document.getElementById('msg');
 
-function escapeHtml(s) {
-  return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 
-async function markAsPlayed(song, artist) {
-  try {
-    const res = await fetch(ENDPOINT + "?action=markPlayed&song=" + encodeURIComponent(song) + "&artist=" + encodeURIComponent(artist));
-    const j = await res.json();
-    if (j.ok) {
-      msg.textContent = "✅ Marked as played.";
-      msg.className = "success";
-      load();
-    } else {
-      msg.textContent = "❌ Error: " + (j.error || "try again");
-      msg.className = "error";
-    }
-  } catch (err) {
-    msg.textContent = "❌ Network error";
-    msg.className = "error";
-  }
-}
-
-function render(listEl, items, showButton) {
-  listEl.innerHTML = items.length
-    ? items.map(i => `<li><span><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}${i.username ? ' ('+escapeHtml(i.username)+')' : ''}${i.link ? ' — <a href="${i.link}" target="_blank">link</a>' : ''}</span>${showButton ? `<button onclick="markAsPlayed('${escapeHtml(i.song)}','${escapeHtml(i.artist)}')">Mark Played</button>` : ''}</li>`).join('')
-    : '<li><em>None yet.</em></li>';
-}
-
-async function load() {
-  try {
+async function load(){
+  try{
     const res = await fetch(ENDPOINT);
     const j = await res.json();
-    render(pendingList, j.pending || [], true);
-    render(playedList, j.played || [], false);
-  } catch (e) {
-    pendingList.innerHTML = playedList.innerHTML = '<li><em>Failed to load</em></li>';
+    const pending = j.pending || [];
+    const played = j.played || [];
+    countPending.textContent = pending.length;
+    countPlayed.textContent = played.length;
+
+    pendingEl.innerHTML = pending.length
+      ? pending.map(i=>`<li><span><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}${i.username? ' ('+escapeHtml(i.username)+')':''}${i.link?' — <a href="'+escapeHtml(i.link)+'" target="_blank">link</a>':''}</span>
+          <button onclick="markPlayed('${escapeHtml(i.song)}','${escapeHtml(i.artist)}')">Mark Played</button></li>`).join('')
+      : '<li><em>No pending</em></li>';
+
+    playedEl.innerHTML = played.length
+      ? played.map(i=>`<li><span><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}</span></li>`).join('')
+      : '<li><em>None</em></li>';
+  }catch(e){
+    pendingEl.innerHTML = playedEl.innerHTML = '<li><em>Failed to load</em></li>';
   }
 }
 
-setInterval(load, 5000);
+async function markPlayed(song, artist){
+  msg.textContent = 'Updating...'; msg.className = '';
+  try{
+    const url = ENDPOINT + '?action=markPlayed&song=' + encodeURIComponent(song) + '&artist=' + encodeURIComponent(artist);
+    const res = await fetch(url); // GET is fine for this action per your backend
+    const j = await res.json();
+    if(j.ok){ msg.textContent='✅ Marked as played'; msg.className='success'; load(); }
+    else { msg.textContent='❌ ' + (j.error||'Update failed'); msg.className='error'; }
+  }catch(e){ msg.textContent='❌ Network error'; msg.className='error'; }
+}
+
 load();
+setInterval(load, 5000);
 </script>
 </body>
 </html>
+
 
 
 
