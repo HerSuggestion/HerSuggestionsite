@@ -10,18 +10,34 @@
     button { padding:6px 12px; background:#1976d2; color:#fff; border:none; border-radius:6px; cursor:pointer }
     button:hover { background:#1565c0 }
     .success { color: #4CAF50; font-weight: bold; }
+    .container { display: flex; gap: 40px; flex-wrap: wrap; }
+    .list-box { flex: 1; min-width: 300px; }
+    h2 { margin-top: 0; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 8px; margin-bottom: 6px; border: 1px solid #333; border-radius: 6px; }
   </style>
 </head>
 <body>
   <h1>Admin Panel</h1>
-  <p>Click "Mark Played" to move a song to the Played list.</p>
+  <p>Manage your songs below:</p>
   <div id="msg"></div>
-  <ul id="pending"></ul>
+
+  <div class="container">
+    <div class="list-box">
+      <h2>Pending Songs</h2>
+      <ul id="pending"></ul>
+    </div>
+    <div class="list-box">
+      <h2>Played Songs</h2>
+      <ul id="played"></ul>
+    </div>
+  </div>
 
 <script>
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwehlwjPE4WXSKamnsnywAMbnYTQlWsG8duCzgyehW1136MZ6E9s_hqoKUtRv0fLJgB/exec';
 const msg = document.getElementById('msg');
 const pendingList = document.getElementById('pending');
+const playedList = document.getElementById('played');
 
 function escapeHtml(s) {
   return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
@@ -30,22 +46,42 @@ function escapeHtml(s) {
 async function load() {
   const res = await fetch(ENDPOINT + '?v2=1');
   const j = await res.json();
+
   pendingList.innerHTML = j.pending && j.pending.length
     ? j.pending.map((i, idx) => `<li><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}
         <button onclick="markPlayed(${idx})">Mark Played</button>
       </li>`).join('')
     : '<li><em>No pending songs.</em></li>';
+
+  playedList.innerHTML = j.played && j.played.length
+    ? j.played.map((i, idx) => `<li><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}
+        <button onclick="markPending(${idx})">Mark Pending</button>
+      </li>`).join('')
+    : '<li><em>No played songs.</em></li>';
 }
 
 async function markPlayed(index) {
   const res = await fetch(ENDPOINT + '?mark=' + index, { method: 'POST' });
   const j = await res.json();
   if (j.ok) {
-    msg.textContent = '✅ Saved!';
+    msg.textContent = '✅ Moved to Played!';
     msg.className = 'success';
     load();
   } else {
-    msg.textContent = '❌ Error marking song';
+    msg.textContent = '❌ Error updating';
+    msg.className = '';
+  }
+}
+
+async function markPending(index) {
+  const res = await fetch(ENDPOINT + '?unmark=' + index, { method: 'POST' });
+  const j = await res.json();
+  if (j.ok) {
+    msg.textContent = '✅ Moved to Pending!';
+    msg.className = 'success';
+    load();
+  } else {
+    msg.textContent = '❌ Error updating';
     msg.className = '';
   }
 }
