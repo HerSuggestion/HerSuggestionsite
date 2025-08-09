@@ -1,57 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Today's Songs</title>
-<style>
-  body { background:#0b0b0b; color:#f5f5f5; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin:0 }
-  .header { background:#1976d2; padding:28px 16px; text-align:center }
-  .header h1 { margin:0 0 8px; font-size:40px }
-  .wrap { max-width:960px; margin:0 auto; padding:18px 16px; display:grid; gap:22px }
-  .card { background:#141414; border:1px solid #222; border-radius:12px; padding:16px }
-  input,button { font:inherit; padding:12px; border-radius:10px; border:1px solid #2a2a2a; background:#0f0f0f; color:#fff }
-  button { background:#1976d2; border-color:#1976d2; cursor:pointer; font-weight:700 }
-  .row { display:flex; gap:10px; flex-wrap:wrap }
-  .list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
-  .list li { padding:10px; border:1px solid #222; border-radius:10px }
-  a { color:#69b4ff; text-decoration:none }
-  #msg.success { color: #00ff7f; }
-  #msg.error { color: #ff4c4c; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Today's Songs</title>
+  <style>
+    body { background:#0b0b0b; color:#f5f5f5; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin:0 }
+    .header { background:#1976d2; padding:28px 16px; text-align:center }
+    .header h1 { margin:0 0 8px; font-size:40px }
+    .wrap { max-width:960px; margin:0 auto; padding:18px 16px; display:grid; gap:22px }
+    .card { background:#141414; border:1px solid #222; border-radius:12px; padding:16px }
+    input,button { font:inherit; padding:12px; border-radius:10px; border:1px solid #2a2a2a; background:#0f0f0f; color:#fff }
+    button { background:#1976d2; border-color:#1976d2; cursor:pointer; font-weight:700 }
+    .row { display:flex; gap:10px; flex-wrap:wrap }
+    .list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
+    .list li { padding:10px; border:1px solid #222; border-radius:10px }
+    a { color:#69b4ff; text-decoration:none }
+    #msg { margin-top:10px; font-weight:bold }
+  </style>
 </head>
 <body>
-<div class="header">
-  <h1>Today's Songs</h1>
-  <div>The songs listed on here are in no particular order. The list is cleared every night.</div>
-</div>
-
-<div class="wrap">
-  <div class="card">
-    <h2>Suggest a Song</h2>
-    <form id="form" class="row">
-      <input id="song" placeholder="Song title *" required style="flex:2;min-width:180px">
-      <input id="artist" placeholder="Artist *" required style="flex:2;min-width:160px">
-      <input id="link" placeholder="(Optional) YouTube/Spotify link" style="flex:3;min-width:220px">
-      <input id="username" placeholder="(Optional) Your TikTok @" style="flex:2;min-width:160px">
-      <button>Submit!</button>
-    </form>
-    <div id="msg"></div>
+  <div class="header">
+    <h1>Today's Songs</h1>
+    <div>The songs listed here are in no particular order. The list is cleared every night.</div>
   </div>
 
-  <div class="card">
-    <h2>Today's Played Songs</h2>
-    <ul id="played" class="list"></ul>
-  </div>
+  <div class="wrap">
+    <div class="card">
+      <h2>Suggest a Song</h2>
+      <form id="form" class="row">
+        <input id="song" placeholder="Song title *" required style="flex:2;min-width:180px">
+        <input id="artist" placeholder="Artist *" required style="flex:2;min-width:160px">
+        <input id="link" placeholder="(Optional) YouTube/Spotify link" style="flex:3;min-width:220px">
+        <input id="username" placeholder="(Optional) Your TikTok @" style="flex:2;min-width:160px">
+        <button>Submit!</button>
+      </form>
+      <div id="msg"></div>
+    </div>
 
-  <div class="card">
-    <h2>Today's Suggested Songs</h2>
-    <ul id="suggested" class="list"></ul>
+    <div class="card">
+      <h2>Today's Played Songs</h2>
+      <ul id="played" class="list"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Today's Suggested Songs</h2>
+      <ul id="suggested" class="list"></ul>
+    </div>
   </div>
-</div>
 
 <script>
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwehlwjPE4WXSKamnsnywAMbnYTQlWsG8duCzgyehW1136MZ6E9s_hqoKUtRv0fLJgB/exec';
+
 const form = document.getElementById('form');
 const msg = document.getElementById('msg');
 const played = document.getElementById('played');
@@ -60,13 +60,14 @@ const suggested = document.getElementById('suggested');
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   msg.textContent = 'Submitting…';
-  msg.className = '';
+
   const payload = {
     song: document.getElementById('song').value.trim(),
     artist: document.getElementById('artist').value.trim(),
     link: document.getElementById('link').value.trim(),
     username: document.getElementById('username').value.trim()
   };
+
   try {
     const res = await fetch(ENDPOINT, {
       method: 'POST',
@@ -75,44 +76,54 @@ form.addEventListener('submit', async (e) => {
     });
     const j = await res.json();
     if (j.ok) {
-      msg.textContent = 'Added!';
-      msg.className = 'success';
+      msg.style.color = "lightgreen";
+      msg.textContent = '✅ Added!';
       form.reset();
       load();
     } else {
-      msg.textContent = 'Error: ' + (j.error || 'try again');
-      msg.className = 'error';
+      msg.style.color = "red";
+      msg.textContent = '❌ Error: ' + (j.error || 'try again');
     }
-  } catch(e) {
-    msg.textContent = 'Network error';
-    msg.className = 'error';
+  } catch (e) {
+    msg.style.color = "red";
+    msg.textContent = '❌ Network error';
   }
 });
 
-function escapeHtml(s) { return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[m]);
+}
 
 function render(ul, items) {
-  ul.innerHTML = items.length ? items.map(i => `<li><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}
-    ${i.username ? ' ('+escapeHtml(i.username)+')' : ''}
-    ${i.link ? ' — <a href="'+escapeHtml(i.link)+'" target="_blank" rel="noopener">link</a>' : ''}</li>`).join('')
+  ul.innerHTML = items.length
+    ? items.map(i => `<li><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}${
+        i.username ? ' ('+escapeHtml(i.username)+')' : ''
+      }${
+        i.link ? ' — <a href="'+i.link+'" target="_blank" rel="noopener">link</a>' : ''
+      }</li>`).join('')
     : '<li><em>None yet.</em></li>';
 }
 
 async function load() {
   try {
-    const res = await fetch(ENDPOINT + '?v2=1');
+    const res = await fetch(ENDPOINT + '?v2=1'); // pulls song data
     const j = await res.json();
-    render(suggested, (j.pending || []));
-    render(played, (j.played || []));
-  } catch(e) {
+    render(suggested, j.pending || []);
+    render(played, j.played || []);
+  } catch (e) {
     suggested.innerHTML = played.innerHTML = '<li><em>Failed to load</em></li>';
   }
 }
 
+// Load on start + refresh every 5 seconds
 load();
+setInterval(load, 5000);
 </script>
 </body>
 </html>
+
 
 
 
