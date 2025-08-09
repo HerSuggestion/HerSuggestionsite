@@ -16,8 +16,9 @@
     .list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
     .list li { padding:10px; border:1px solid #222; border-radius:10px }
     a { color:#69b4ff; text-decoration:none }
-    .success { color:lightgreen; font-weight:bold }
-    .error { color:red; font-weight:bold }
+    #msg { margin-top:10px; font-weight:bold; }
+    .success { color: #4CAF50; }
+    .error { color: #f44336; }
   </style>
 </head>
 <body>
@@ -33,7 +34,91 @@
         <input id="song" placeholder="Song title *" required style="flex:2;min-width:180px">
         <input id="artist" placeholder="Artist *" required style="flex:2;min-width:160px">
         <input id="link" placeholder="(Optional) YouTube/Spotify link" style="flex:3;min-width:220px">
-        <input id="username" placeholder="(Optional) Your TikTok @" style="flex:2;min-width:160px
+        <input id="username" placeholder="(Optional) Your TikTok @" style="flex:2;min-width:160px">
+        <button>Submit!</button>
+      </form>
+      <div id="msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>Today's Played Songs</h2>
+      <ul id="played" class="list"></ul>
+    </div>
+
+    <div class="card">
+      <h2>Today's Suggested Songs</h2>
+      <ul id="suggested" class="list"></ul>
+    </div>
+  </div>
+
+<script>
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwehlwjPE4WXSKamnsnywAMbnYTQlWsG8duCzgyehW1136MZ6E9s_hqoKUtRv0fLJgB/exec';
+const form = document.getElementById('form');
+const msg = document.getElementById('msg');
+const played = document.getElementById('played');
+const suggested = document.getElementById('suggested');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  msg.textContent = 'Submitting…';
+  msg.className = '';
+  const payload = {
+    song: document.getElementById('song').value.trim(),
+    artist: document.getElementById('artist').value.trim(),
+    link: document.getElementById('link').value.trim(),
+    username: document.getElementById('username').value.trim()
+  };
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const j = await res.json();
+    if (j.ok) {
+      msg.textContent = '✅ Added!';
+      msg.className = 'success';
+      form.reset();
+      load();
+    } else {
+      msg.textContent = '❌ Error: ' + (j.error || 'try again');
+      msg.className = 'error';
+    }
+  } catch(e) {
+    msg.textContent = '❌ Network error';
+    msg.className = 'error';
+  }
+});
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function render(ul, items) {
+  ul.innerHTML = items.length
+    ? items.map(i => `<li><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}${
+        i.username ? ' ('+escapeHtml(i.username)+')' : ''
+      }${
+        i.link ? ' — <a href="'+i.link+'" target="_blank" rel="noopener">link</a>' : ''
+      }</li>`).join('')
+    : '<li><em>None yet.</em></li>';
+}
+
+async function load() {
+  try {
+    const res = await fetch(ENDPOINT + '?v2=1');
+    const j = await res.json();
+    render(suggested, j.pending || []);
+    render(played, j.played || []);
+  } catch(e) {
+    suggested.innerHTML = played.innerHTML = '<li><em>Failed to load</em></li>';
+  }
+}
+
+load();
+</script>
+</body>
+</html>
 
 
 
