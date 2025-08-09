@@ -16,13 +16,15 @@
     .list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
     .list li { padding:10px; border:1px solid #222; border-radius:10px }
     a { color:#69b4ff; text-decoration:none }
-    #msg { margin-top:10px; font-weight:bold }
+    #msg { margin-top:10px; font-weight:600; }
+    .success { color:lightgreen; }
+    .error { color:#ff4d4d; }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>Today's Songs</h1>
-    <div>The songs listed here are in no particular order. The list is cleared every night.</div>
+    <div>The songs listed on here are in no particular order. The list is cleared every night.</div>
   </div>
 
   <div class="wrap">
@@ -60,6 +62,7 @@ const suggested = document.getElementById('suggested');
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   msg.textContent = 'Submitting…';
+  msg.className = '';
 
   const payload = {
     song: document.getElementById('song').value.trim(),
@@ -76,24 +79,22 @@ form.addEventListener('submit', async (e) => {
     });
     const j = await res.json();
     if (j.ok) {
-      msg.style.color = "lightgreen";
       msg.textContent = '✅ Added!';
+      msg.className = 'success';
       form.reset();
       load();
     } else {
-      msg.style.color = "red";
       msg.textContent = '❌ Error: ' + (j.error || 'try again');
+      msg.className = 'error';
     }
   } catch (e) {
-    msg.style.color = "red";
     msg.textContent = '❌ Network error';
+    msg.className = 'error';
   }
 });
 
 function escapeHtml(s) {
-  return String(s||'').replace(/[&<>"']/g, m => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  })[m]);
+  return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
 function render(ul, items) {
@@ -101,14 +102,14 @@ function render(ul, items) {
     ? items.map(i => `<li><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}${
         i.username ? ' ('+escapeHtml(i.username)+')' : ''
       }${
-        i.link ? ' — <a href="'+i.link+'" target="_blank" rel="noopener">link</a>' : ''
+        i.link ? ' — <a href="'+escapeHtml(i.link)+'" target="_blank" rel="noopener">link</a>' : ''
       }</li>`).join('')
     : '<li><em>None yet.</em></li>';
 }
 
 async function load() {
   try {
-    const res = await fetch(ENDPOINT + '?v2=1'); // pulls song data
+    const res = await fetch(ENDPOINT);
     const j = await res.json();
     render(suggested, j.pending || []);
     render(played, j.played || []);
@@ -117,12 +118,11 @@ async function load() {
   }
 }
 
-// Load on start + refresh every 5 seconds
 load();
-setInterval(load, 5000);
 </script>
 </body>
 </html>
+
 
 
 
