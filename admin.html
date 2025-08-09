@@ -1,35 +1,87 @@
-<!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin</title></head>
-<body style="background:#0b0b0b;color:#f5f5f5;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">
-  <h1>Admin</h1>
-  <input id="pass" placeholder="Passcode">
-  <button id="loadBtn">Load</button>
-  <ul id="list"></ul>
-<script>
-const ENDPOINT = 'https://script.google.com/macros/s/AKfycbw7CnafwqLdcyVPZP8kqfMrm7n2T6FTJuwQ-V-JIGRz67exl938arDje3M4bCdl83bH/exec';
-const passEl = document.getElementById('pass');
-const list = document.getElementById('list');
-document.getElementById('loadBtn').onclick = load;
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Panel</title>
+  <style>
+    body { background:#0b0b0b; color:#fff; font-family:sans-serif; margin:0; padding:20px }
+    h1 { color:#69b4ff }
+    button { padding:10px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:bold }
+    .mark { background:#28a745; color:#fff }
+    .clear { background:#dc3545; color:#fff; margin-left:10px }
+    table { width:100%; border-collapse:collapse; margin-top:20px }
+    th, td { padding:10px; border-bottom:1px solid #333 }
+    a { color:#69b4ff; text-decoration:none }
+  </style>
+</head>
+<body>
+  <h1>Admin Panel</h1>
 
-async function load(){
-  list.innerHTML = '<li>Loading…</li>';
-  try {
-    const res = await fetch(ENDPOINT + '?v2=1');
-    const j = await res.json();
-    const items = j.pending || [];
-    list.innerHTML = items.length ? items.map(i => `<li>\${i.row}: <b>\${i.song}</b> — \${i.artist} 
-      <button onclick="mark(\${i.row})">Mark played</button></li>`).join('') : '<li>No pending</li>';
-  } catch(e) { list.innerHTML = '<li>Failed to load</li>'; }
+  <div>
+    <input id="pass" placeholder="Admin password" type="password">
+    <button id="loadBtn">Load Songs</button>
+    <button class="clear" id="clearBtn">Clear All</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Song</th><th>Artist</th><th>User</th><th>Link</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody id="list"><tr><td colspan="6"><em>Load songs to begin</em></td></tr></tbody>
+  </table>
+
+<script>
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwehlwjPE4WXSKamnsnywAMbnYTQlWsG8duCzgyehW1136MZ6E9s_hqoKUtRv0fLJgB/exec';
+
+const passInput = document.getElementById('pass');
+const list = document.getElementById('list');
+
+document.getElementById('loadBtn').onclick = loadSongs;
+document.getElementById('clearBtn').onclick = clearAll;
+
+async function loadSongs() {
+  const res = await fetch(ENDPOINT + '?V1=1');
+  const data = await res.json();
+  const songs = [...data.pending, ...data.played];
+  list.innerHTML = songs.length ? songs.map(r => `
+    <tr>
+      <td>${r.song}</td>
+      <td>${r.artist}</td>
+      <td>${r.username || ''}</td>
+      <td>${r.link ? `<a href="${r.link}" target="_blank">Link</a>` : ''}</td>
+      <td>${r.status || 'pending'}</td>
+      <td>${r.status !== 'played' ? `<button class="mark" onclick="markPlayed(${r.row})">Mark Played</button>` : ''}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="6"><em>No songs</em></td></tr>';
 }
 
-async function mark(row){
+async function markPlayed(row) {
   const res = await fetch(ENDPOINT, {
-    method:'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ action:'mark', row, pass: passEl.value })
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'mark', row, pass: passInput.value.trim() })
   });
   const j = await res.json();
-  if (j.ok) load(); else alert(j.error || 'Failed');
+  if (j.ok) loadSongs();
+  else alert(j.error || 'Error');
+}
+
+async function clearAll() {
+  if (!confirm('Clear ALL songs? This cannot be undone!')) return;
+  const res = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'clear', pass: passInput.value.trim() })
+  });
+  const j = await res.json();
+  if (j.ok) {
+    alert('List cleared!');
+    loadSongs();
+  } else {
+    alert(j.error || 'Error');
+  }
 }
 </script>
-</body></html>
+</body>
+</html>
