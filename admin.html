@@ -3,91 +3,82 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin - Today's Songs</title>
+  <title>Admin Panel</title>
   <style>
-    body { background:#0b0b0b; color:#f5f5f5; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin:0; padding:20px }
-    h1 { color:#1976d2; }
-    button { padding:6px 12px; background:#1976d2; color:#fff; border:none; border-radius:6px; cursor:pointer }
-    button:hover { background:#1565c0 }
-    .success { color: #4CAF50; font-weight: bold; }
-    .container { display: flex; gap: 40px; flex-wrap: wrap; }
-    .list-box { flex: 1; min-width: 300px; }
-    h2 { margin-top: 0; }
-    ul { list-style: none; padding: 0; }
-    li { padding: 8px; margin-bottom: 6px; border: 1px solid #333; border-radius: 6px; }
+    body { background:#0b0b0b; color:#f5f5f5; font-family: Arial, sans-serif; padding:20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 10px; border: 1px solid #333; }
+    button { padding: 6px 12px; background:#1976d2; color:#fff; border:none; cursor:pointer; border-radius:5px; }
+    button:hover { background:#1565c0; }
+    .success { color: lime; }
+    .error { color: red; }
   </style>
 </head>
 <body>
   <h1>Admin Panel</h1>
-  <p>Manage your songs below:</p>
-  <div id="msg"></div>
-
-  <div class="container">
-    <div class="list-box">
-      <h2>Pending Songs</h2>
-      <ul id="pending"></ul>
-    </div>
-    <div class="list-box">
-      <h2>Played Songs</h2>
-      <ul id="played"></ul>
-    </div>
-  </div>
+  <div id="status"></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Song</th>
+        <th>Artist</th>
+        <th>Link</th>
+        <th>Username</th>
+        <th>Mark as Played</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
 
 <script>
 const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwehlwjPE4WXSKamnsnywAMbnYTQlWsG8duCzgyehW1136MZ6E9s_hqoKUtRv0fLJgB/exec';
-const msg = document.getElementById('msg');
-const pendingList = document.getElementById('pending');
-const playedList = document.getElementById('played');
 
-function escapeHtml(s) {
-  return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
-async function load() {
-  const res = await fetch(ENDPOINT + '?v2=1');
-  const j = await res.json();
-
-  pendingList.innerHTML = j.pending && j.pending.length
-    ? j.pending.map((i, idx) => `<li><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}
-        <button onclick="markPlayed(${idx})">Mark Played</button>
-      </li>`).join('')
-    : '<li><em>No pending songs.</em></li>';
-
-  playedList.innerHTML = j.played && j.played.length
-    ? j.played.map((i, idx) => `<li><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}
-        <button onclick="markPending(${idx})">Mark Pending</button>
-      </li>`).join('')
-    : '<li><em>No played songs.</em></li>';
+async function loadRequests() {
+  try {
+    const res = await fetch(ENDPOINT);
+    const j = await res.json();
+    const tbody = document.getElementById('tbody');
+    tbody.innerHTML = (j.pending || []).map((i, idx) => `
+      <tr>
+        <td>${i.song}</td>
+        <td>${i.artist}</td>
+        <td>${i.link ? `<a href="${i.link}" target="_blank">Link</a>` : ''}</td>
+        <td>${i.username || ''}</td>
+        <td><button onclick="markPlayed(${idx})">Played</button></td>
+      </tr>
+    `).join('');
+  } catch (e) {
+    console.error(e);
+  }
 }
 
 async function markPlayed(index) {
-  const res = await fetch(ENDPOINT + '?mark=' + index, { method: 'POST' });
-  const j = await res.json();
-  if (j.ok) {
-    msg.textContent = '✅ Moved to Played!';
-    msg.className = 'success';
-    load();
-  } else {
-    msg.textContent = '❌ Error updating';
-    msg.className = '';
+  const status = document.getElementById('status');
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ index })
+    });
+    const j = await res.json();
+    if (j.ok) {
+      status.textContent = "✅ Marked as played";
+      status.className = "success";
+      loadRequests();
+    } else {
+      status.textContent = "❌ Error: " + (j.error || "Unknown");
+      status.className = "error";
+    }
+  } catch (err) {
+    status.textContent = "❌ Network error";
+    status.className = "error";
   }
 }
 
-async function markPending(index) {
-  const res = await fetch(ENDPOINT + '?unmark=' + index, { method: 'POST' });
-  const j = await res.json();
-  if (j.ok) {
-    msg.textContent = '✅ Moved to Pending!';
-    msg.className = 'success';
-    load();
-  } else {
-    msg.textContent = '❌ Error updating';
-    msg.className = '';
-  }
-}
-
-load();
+setInterval(loadRequests, 5000); // Refresh every 5 seconds
+loadRequests();
 </script>
 </body>
 </html>
+
 
