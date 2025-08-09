@@ -1,87 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Admin Panel</title>
-  <style>
-    body { background:#0b0b0b; color:#fff; font-family:sans-serif; margin:0; padding:20px }
-    h1 { color:#69b4ff }
-    button { padding:10px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:bold }
-    .mark { background:#28a745; color:#fff }
-    .clear { background:#dc3545; color:#fff; margin-left:10px }
-    table { width:100%; border-collapse:collapse; margin-top:20px }
-    th, td { padding:10px; border-bottom:1px solid #333 }
-    a { color:#69b4ff; text-decoration:none }
-  </style>
+<meta charset="utf-8">
+<title>Admin Panel</title>
+<style>
+  body { font-family: sans-serif; background:#111; color:#fff; padding:20px }
+  button { margin:5px; padding:10px; background:#1976d2; border:none; color:#fff; cursor:pointer; border-radius:5px }
+</style>
 </head>
 <body>
-  <h1>Admin Panel</h1>
-
-  <div>
-    <input id="pass" placeholder="Admin password" type="password">
-    <button id="loadBtn">Load Songs</button>
-    <button class="clear" id="clearBtn">Clear All</button>
-  </div>
-
-  <table>
-    <thead>
-      <tr><th>Song</th><th>Artist</th><th>User</th><th>Link</th><th>Status</th><th>Actions</th></tr>
-    </thead>
-    <tbody id="list"><tr><td colspan="6"><em>Load songs to begin</em></td></tr></tbody>
-  </table>
+<h1>Admin Panel</h1>
+<input id="pass" type="password" placeholder="Password">
+<button onclick="login()">Login</button>
+<div id="panel" style="display:none">
+  <h2>Pending Suggestions</h2>
+  <ul id="pending"></ul>
+  <button onclick="clearAll()">Clear All</button>
+</div>
 
 <script>
-const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwehlwjPE4WXSKamnsnywAMbnYTQlWsG8duCzgyehW1136MZ6E9s_hqoKUtRv0fLJgB/exec';
+const ENDPOINT = 'YOUR_EXEC_URL_HERE';
+const PASSWORD = 'Bonomeza1';
 
-const passInput = document.getElementById('pass');
-const list = document.getElementById('list');
-
-document.getElementById('loadBtn').onclick = loadSongs;
-document.getElementById('clearBtn').onclick = clearAll;
-
-async function loadSongs() {
-  const res = await fetch(ENDPOINT + '?V1=1');
-  const data = await res.json();
-  const songs = [...data.pending, ...data.played];
-  list.innerHTML = songs.length ? songs.map(r => `
-    <tr>
-      <td>${r.song}</td>
-      <td>${r.artist}</td>
-      <td>${r.username || ''}</td>
-      <td>${r.link ? `<a href="${r.link}" target="_blank">Link</a>` : ''}</td>
-      <td>${r.status || 'pending'}</td>
-      <td>${r.status !== 'played' ? `<button class="mark" onclick="markPlayed(${r.row})">Mark Played</button>` : ''}</td>
-    </tr>
-  `).join('') : '<tr><td colspan="6"><em>No songs</em></td></tr>';
+async function login() {
+  if (document.getElementById('pass').value !== PASSWORD) {
+    alert('Wrong password');
+    return;
+  }
+  document.getElementById('panel').style.display = 'block';
+  load();
 }
 
-async function markPlayed(row) {
-  const res = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'mark', row, pass: passInput.value.trim() })
-  });
+function renderPending(items) {
+  const ul = document.getElementById('pending');
+  ul.innerHTML = items.map((i, idx) =>
+    `<li>${i.song} — ${i.artist} <button onclick="markPlayed(${idx})">Mark Played</button></li>`
+  ).join('');
+}
+
+async function load() {
+  const res = await fetch(ENDPOINT + '?V1=1');
   const j = await res.json();
-  if (j.ok) loadSongs();
-  else alert(j.error || 'Error');
+  renderPending(j.pending || []);
+}
+
+async function markPlayed(index) {
+  await fetch(ENDPOINT + '?mark=' + index, { method: 'POST' });
+  load();
 }
 
 async function clearAll() {
-  if (!confirm('Clear ALL songs? This cannot be undone!')) return;
-  const res = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'clear', pass: passInput.value.trim() })
-  });
-  const j = await res.json();
-  if (j.ok) {
-    alert('List cleared!');
-    loadSongs();
-  } else {
-    alert(j.error || 'Error');
-  }
+  await fetch(ENDPOINT + '?clear=1', { method: 'POST' });
+  load();
 }
 </script>
 </body>
 </html>
+
