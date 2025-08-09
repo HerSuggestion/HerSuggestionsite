@@ -4,56 +4,75 @@
 <meta charset="utf-8">
 <title>Admin Panel</title>
 <style>
-  body { font-family: sans-serif; background:#111; color:#fff; padding:20px }
-  button { margin:5px; padding:10px; background:#1976d2; border:none; color:#fff; cursor:pointer; border-radius:5px }
+  body { background:#0b0b0b; color:#fff; font-family:sans-serif; margin:0; padding:20px }
+  h1 { margin-top:0 }
+  .lists { display:flex; gap:20px }
+  .list { flex:1 }
+  ul { list-style:none; padding:0 }
+  li { padding:8px; border:1px solid #444; margin-bottom:6px; border-radius:6px; display:flex; justify-content:space-between; align-items:center }
+  button { padding:4px 8px; cursor:pointer; background:#1976d2; color:white; border:none; border-radius:4px }
+  .success { color:lightgreen }
+  .error { color:red }
 </style>
 </head>
 <body>
 <h1>Admin Panel</h1>
-<input id="pass" type="password" placeholder="Password">
-<button onclick="login()">Login</button>
-<div id="panel" style="display:none">
-  <h2>Pending Suggestions</h2>
-  <ul id="pending"></ul>
-  <button onclick="clearAll()">Clear All</button>
+<div id="status"></div>
+<div class="lists">
+  <div class="list">
+    <h2>Pending</h2>
+    <ul id="pending"></ul>
+  </div>
+  <div class="list">
+    <h2>Played</h2>
+    <ul id="played"></ul>
+  </div>
 </div>
-
 <script>
-const ENDPOINT = 'YOUR_EXEC_URL_HERE';
-const PASSWORD = 'Bonomeza1';
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbwehlwjPE4WXSKamnsnywAMbnYTQlWsG8duCzgyehW1136MZ6E9s_hqoKUtRv0fLJgB/exec';
+const statusEl = document.getElementById('status');
+const pendingEl = document.getElementById('pending');
+const playedEl = document.getElementById('played');
 
-async function login() {
-  if (document.getElementById('pass').value !== PASSWORD) {
-    alert('Wrong password');
-    return;
-  }
-  document.getElementById('panel').style.display = 'block';
-  load();
-}
-
-function renderPending(items) {
-  const ul = document.getElementById('pending');
-  ul.innerHTML = items.map((i, idx) =>
-    `<li>${i.song} — ${i.artist} <button onclick="markPlayed(${idx})">Mark Played</button></li>`
-  ).join('');
-}
-
-async function load() {
-  const res = await fetch(ENDPOINT + '?V1=1');
-  const j = await res.json();
-  renderPending(j.pending || []);
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
 async function markPlayed(index) {
-  await fetch(ENDPOINT + '?mark=' + index, { method: 'POST' });
-  load();
+  try {
+    const res = await fetch(ENDPOINT + '?mark=' + index);
+    const j = await res.json();
+    if (j.ok) {
+      statusEl.textContent = '✅ Marked as played';
+      statusEl.className = 'success';
+      load();
+    } else {
+      statusEl.textContent = '❌ Error';
+      statusEl.className = 'error';
+    }
+  } catch {
+    statusEl.textContent = '❌ Network error';
+    statusEl.className = 'error';
+  }
 }
 
-async function clearAll() {
-  await fetch(ENDPOINT + '?clear=1', { method: 'POST' });
-  load();
+async function load() {
+  try {
+    const res = await fetch(ENDPOINT + '?v1=1');
+    const j = await res.json();
+    pendingEl.innerHTML = j.pending.length
+      ? j.pending.map((i, idx) => `<li>${escapeHtml(i.song)} — ${escapeHtml(i.artist)} <button onclick="markPlayed(${idx})">Mark Played</button></li>`).join('')
+      : '<li><em>None</em></li>';
+    playedEl.innerHTML = j.played.length
+      ? j.played.map(i => `<li>${escapeHtml(i.song)} — ${escapeHtml(i.artist)}</li>`).join('')
+      : '<li><em>None</em></li>';
+  } catch {
+    pendingEl.innerHTML = playedEl.innerHTML = '<li><em>Load failed</em></li>';
+  }
 }
+
+setInterval(load, 5000);
+load();
 </script>
 </body>
 </html>
-
