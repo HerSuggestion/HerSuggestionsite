@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="tiktok-developers-site-verification" content="KfLxwWQQh6XcvQlis6OpGGlnkXWUIUBv">
     <title>Your Music Hub</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -119,6 +120,12 @@
 
         .page-section.active {
             display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .container {
@@ -355,15 +362,21 @@
         .gallery-header {
             text-align: center;
             padding: 3rem 0;
+            background: linear-gradient(135deg, #4a148c, #7b1fa2);
+            border-radius: 15px;
+            margin-bottom: 2rem;
         }
 
         .gallery-header h1 {
             font-size: 3rem;
             margin-bottom: 1rem;
-            background: linear-gradient(45deg, #64b5f6, #42a5f5);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .gallery-header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
         }
 
         .upload-section {
@@ -435,15 +448,21 @@
         .rules-header {
             text-align: center;
             margin-bottom: 3rem;
+            background: linear-gradient(135deg, #d32f2f, #f57c00);
+            padding: 3rem 2rem;
+            border-radius: 15px;
         }
 
         .rules-header h1 {
             font-size: 3rem;
             margin-bottom: 1rem;
-            background: linear-gradient(45deg, #64b5f6, #42a5f5);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: white;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .rules-header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
         }
 
         .rule-item {
@@ -588,32 +607,43 @@
 
                 <div class="song-form">
                     <h2>Suggest a Song</h2>
-                    <div class="tiktok-login">
+                    
+                    <!-- Login Section -->
+                    <div id="loginSection" class="tiktok-login">
                         <button class="tiktok-btn" onclick="loginWithTikTok()">
-                            🎵 Login with TikTok
+                            🎵 Login with TikTok to Continue
                         </button>
+                        <p style="text-align: center; margin-top: 1rem; opacity: 0.8;">You must login with TikTok to suggest songs</p>
                     </div>
                     
-                    <form id="songForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <input type="text" id="songTitle" placeholder="Song title *" required>
-                            </div>
-                            <div class="form-group">
-                                <input type="text" id="artistName" placeholder="Artist *" required>
-                            </div>
+                    <!-- Welcome Message (hidden initially) -->
+                    <div id="welcomeSection" style="display: none;">
+                        <div style="background: rgba(255, 0, 80, 0.1); border: 1px solid rgba(255, 0, 80, 0.3); border-radius: 10px; padding: 1rem; margin-bottom: 2rem; text-align: center;">
+                            <h3 style="color: #ff2c55; margin-bottom: 0.5rem;">🎉 Welcome back!</h3>
+                            <p id="welcomeMessage" style="margin: 0; font-size: 1.1rem;">Welcome, <span id="usernameDisplay">@username</span>!</p>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <input type="url" id="songLink" placeholder="(Optional) YouTube/Spotify link">
+                    </div>
+                    
+                    <!-- Song Form (hidden initially) -->
+                    <div id="songFormSection" style="display: none;">
+                        <form id="songForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <input type="text" id="songTitle" placeholder="Song title *" required>
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" id="artistName" placeholder="Artist *" required>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <input type="text" id="username" placeholder="(Optional) Your TikTok @">
+                            <div class="form-row">
+                                <div class="form-group" style="flex: 1;">
+                                    <input type="url" id="songLink" placeholder="Enter Songsterr/YouTube link here *" required style="width: 100%;">
+                                </div>
                             </div>
-                        </div>
-                        <button type="submit" class="submit-btn">Submit!</button>
-                    </form>
-                    <div id="songMessage"></div>
+                            <button type="submit" class="submit-btn">Submit!</button>
+                        </form>
+                        <div id="songMessage"></div>
+                    </div>
                 </div>
 
                 <div class="song-lists">
@@ -633,13 +663,13 @@
         <!-- Previously Played Songs Page -->
         <section id="previously-played" class="page-section">
             <div class="container">
-                <div class="song-header">
+                <div class="song-header" style="background: linear-gradient(135deg, #388e3c, #66bb6a);">
                     <h1>Previously Played Songs</h1>
                     <p>Browse through all the amazing songs that have been played in previous streams!</p>
                 </div>
                 
                 <div class="song-list-section">
-                    <h2>All Previously Played Songs</h2>
+                    <h2>All Previously Played Songs <span class="song-count">6</span></h2>
                     <div id="allPlayedSongs">
                         <div class="song-item">
                             <div class="song-title">Boss Theme | 「刀刀所極之物」 by Godspeed</div>
@@ -656,6 +686,22 @@
                             <div class="song-meta">
                                 <span>8m10s</span>
                                 <a href="https://youtu.be/9lbgUhF_OJ0" class="song-link" target="_blank">link</a>
+                            </div>
+                        </div>
+                        <div class="song-item">
+                            <div class="song-title">Arknights OST - Battleplan Extinguished Sins</div>
+                            <div class="song-artist">Zhentao T.</div>
+                            <div class="song-meta">
+                                <span>3m51s</span>
+                                <a href="https://youtu.be/EuCKE4gFmP4" class="song-link" target="_blank">link</a>
+                            </div>
+                        </div>
+                        <div class="song-item">
+                            <div class="song-title">Joe Swanson & Peter in KPOP DEMON HUNTERS 2</div>
+                            <div class="song-artist">Ricky K.</div>
+                            <div class="song-meta">
+                                <span>3m24s</span>
+                                <a href="https://youtu.be/Jwa5OxDp0h4" class="song-link" target="_blank">link</a>
                             </div>
                         </div>
                     </div>
@@ -681,10 +727,16 @@
 
                 <div class="gallery-grid">
                     <div class="art-item">
-                        <div class="art-image">Sample Fan Art 1</div>
+                        <div class="art-image" style="background: linear-gradient(45deg, #9c27b0, #e91e63);">Sample Fan Art 1</div>
                     </div>
                     <div class="art-item">
-                        <div class="art-image">Sample Fan Art 2</div>
+                        <div class="art-image" style="background: linear-gradient(45deg, #3f51b5, #2196f3);">Sample Fan Art 2</div>
+                    </div>
+                    <div class="art-item">
+                        <div class="art-image" style="background: linear-gradient(45deg, #ff9800, #ff5722);">Sample Fan Art 3</div>
+                    </div>
+                    <div class="art-item">
+                        <div class="art-image" style="background: linear-gradient(45deg, #4caf50, #8bc34a);">Sample Fan Art 4</div>
                     </div>
                 </div>
             </div>
@@ -743,23 +795,38 @@
 
         // Navigation functionality
         function showPage(pageId) {
+            console.log('Switching to page:', pageId); // Debug log
+            
             // Hide all pages
             document.querySelectorAll('.page-section').forEach(page => {
                 page.classList.remove('active');
+                console.log('Hiding page:', page.id); // Debug log
             });
             
             // Show selected page
-            document.getElementById(pageId).classList.add('active');
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+                console.log('Showing page:', pageId); // Debug log
+            } else {
+                console.error('Page not found:', pageId);
+            }
             
             // Update nav links
             document.querySelectorAll('.nav-links a').forEach(link => {
                 link.classList.remove('active');
             });
-            event.target.classList.add('active');
+            
+            // Find and activate the clicked link
+            const clickedLink = document.querySelector(`[onclick="showPage('${pageId}')"]`);
+            if (clickedLink) {
+                clickedLink.classList.add('active');
+            }
             
             // Load songs if on songlist page
             if (pageId === 'songlist') {
                 loadSongs();
+                checkLoginStatus(); // Reset login state when navigating to song list
             }
             
             // Close mobile menu
@@ -770,14 +837,151 @@
             document.getElementById('navLinks').classList.toggle('active');
         }
 
-        // TikTok login (placeholder)
+        // TikTok login functionality
+        let currentUser = null;
+
         function loginWithTikTok() {
-            alert('TikTok login integration would go here. For now, you can use the form below without logging in.');
+            // Real TikTok OAuth implementation
+            // You'll need to register your app at https://developers.tiktok.com/
+            
+            const CLIENT_KEY = 'awxesmtodlrfwkck'; // Your TikTok client key
+            const REDIRECT_URI = encodeURIComponent(window.location.origin + '/auth/callback'); // Your callback URL
+            const SCOPE = 'user.info.basic'; // Required permissions
+            const STATE = Math.random().toString(36).substring(2, 15); // Security state parameter
+            
+            // Store state for validation
+            localStorage.setItem('tiktok_auth_state', STATE);
+            
+            // TikTok OAuth URL
+            const authUrl = `https://www.tiktok.com/auth/authorize/` +
+                          `?client_key=${CLIENT_KEY}` +
+                          `&scope=${SCOPE}` +
+                          `&response_type=code` +
+                          `&redirect_uri=${REDIRECT_URI}` +
+                          `&state=${STATE}`;
+            
+            // Show loading state
+            const loginBtn = document.querySelector('.tiktok-btn');
+            loginBtn.innerHTML = '⏳ Redirecting to TikTok...';
+            loginBtn.disabled = true;
+            
+            // For testing: Show the OAuth URL and what you need to set up
+            setTimeout(() => {
+                const currentDomain = window.location.origin;
+                alert(`TikTok OAuth Setup:
+
+Your Client Key: awxesmtodlrfwkck ✅
+
+Next steps needed:
+1. In TikTok Developer Console, set redirect URI to: ${currentDomain}/auth/callback
+2. Set up a backend server to handle the OAuth callback
+3. The OAuth URL is ready: ${authUrl}
+
+For now, using demo mode:`);
+                
+                // Show demo login form for testing
+                showDemoLoginForm();
+            }, 1000);
+            
+            // Uncomment this line when you have the backend callback handler ready:
+            // window.location.href = authUrl;
+        }
+
+        function showDemoLoginForm() {
+            const loginSection = document.getElementById('loginSection');
+            loginSection.innerHTML = `
+                <div style="background: rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 2rem; text-align: center;">
+                    <h3 style="color: #ff2c55; margin-bottom: 1rem;">Demo TikTok Login</h3>
+                    <p style="margin-bottom: 1rem; opacity: 0.8;">Enter your TikTok username for demo purposes:</p>
+                    <input type="text" id="demoUsername" placeholder="Enter your TikTok @username" 
+                           style="width: 100%; max-width: 300px; padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: #f5f5f5; margin-bottom: 1rem;">
+                    <br>
+                    <button onclick="completeDemoLogin()" style="background: linear-gradient(45deg, #ff0050, #fe2c55); color: white; border: none; padding: 1rem 2rem; border-radius: 10px; cursor: pointer; font-weight: bold;">
+                        🎵 Continue with This Username
+                    </button>
+                    <p style="font-size: 0.9rem; opacity: 0.6; margin-top: 1rem;">
+                        Note: This is demo mode. Real TikTok integration requires developer setup.
+                    </p>
+                </div>
+            `;
+        }
+
+        function completeDemoLogin() {
+            const usernameInput = document.getElementById('demoUsername');
+            let username = usernameInput.value.trim();
+            
+            if (!username) {
+                alert('Please enter a username!');
+                return;
+            }
+            
+            // Add @ if not present
+            if (!username.startsWith('@')) {
+                username = '@' + username;
+            }
+            
+            // Simulate API call delay
+            const btn = event.target;
+            btn.innerHTML = '⏳ Logging in...';
+            btn.disabled = true;
+            
+            setTimeout(() => {
+                handleSuccessfulLogin(username);
+            }, 1500);
+        }
+
+        function handleSuccessfulLogin(username) {
+            currentUser = username;
+            
+            // Hide login section
+            document.getElementById('loginSection').style.display = 'none';
+            
+            // Show welcome message
+            document.getElementById('usernameDisplay').textContent = username;
+            document.getElementById('welcomeSection').style.display = 'block';
+            
+            // Show song form
+            document.getElementById('songFormSection').style.display = 'block';
+            
+            // Add welcome animation
+            document.getElementById('welcomeSection').style.animation = 'fadeIn 0.5s ease-in';
+            document.getElementById('songFormSection').style.animation = 'fadeIn 0.5s ease-in 0.2s both';
+        }
+
+        // Handle OAuth callback (for real implementation)
+        function handleTikTokCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            const storedState = localStorage.getItem('tiktok_auth_state');
+            
+            if (code && state === storedState) {
+                // Exchange code for access token via your backend
+                // Then get user info and call handleSuccessfulLogin(username)
+                console.log('TikTok OAuth code received:', code);
+            }
+        }
+
+        // Check if user is already logged in
+        function checkLoginStatus() {
+            // Reset for demo purposes
+            currentUser = null;
+            
+            // Check for OAuth callback
+            if (window.location.search.includes('code=')) {
+                handleTikTokCallback();
+            }
         }
 
         // Song form submission
         document.getElementById('songForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Check if user is logged in
+            if (!currentUser) {
+                alert('Please login with TikTok first!');
+                return;
+            }
             
             const messageEl = document.getElementById('songMessage');
             messageEl.innerHTML = '<div class="message loading">Submitting...</div>';
@@ -786,8 +990,14 @@
                 song: document.getElementById('songTitle').value.trim(),
                 artist: document.getElementById('artistName').value.trim(),
                 link: document.getElementById('songLink').value.trim(),
-                username: document.getElementById('username').value.trim()
+                username: currentUser // Use the logged-in TikTok username
             };
+            
+            // Validate required fields
+            if (!payload.song || !payload.artist || !payload.link) {
+                messageEl.innerHTML = '<div class="message error">❌ All fields are required!</div>';
+                return;
+            }
             
             try {
                 const response = await fetch(ENDPOINT, {
@@ -828,8 +1038,50 @@
             const container = document.getElementById(containerId);
             const countEl = document.getElementById(countId);
             
-            countEl.textContent = songs.
+            countEl.textContent = songs.length;
+            
+            if (songs.length > 0) {
+                container.innerHTML = songs.map(song => `
+                    <div class="song-item">
+                        <div class="song-title">${escapeHtml(song.song)}</div>
+                        <div class="song-artist">${escapeHtml(song.artist)}</div>
+                        <div class="song-meta">
+                            ${song.username ? '<span>' + escapeHtml(song.username) + '</span>' : ''}
+                            ${song.link ? '<a href="' + escapeHtml(song.link) + '" class="song-link" target="_blank" rel="noopener">link</a>' : ''}
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<div class="song-item"><div class="song-title">No songs yet.</div></div>';
+            }
+        }
 
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+
+        // Upload fanart (placeholder)
+        function uploadFanart() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.multiple = true;
+            input.onchange = function(e) {
+                alert('File upload functionality would be implemented here. Selected ' + e.target.files.length + ' file(s).');
+            };
+            input.click();
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSongs();
+            checkLoginStatus();
+        });
+    </script>
+</body>
+</html>
 
 
 
