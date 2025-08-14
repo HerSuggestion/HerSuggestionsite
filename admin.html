@@ -13,20 +13,32 @@
   .list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
   .list li{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px; border:1px solid #222; border-radius:10px }
   button { font:inherit; padding:8px 12px; border-radius:8px; border:1px solid #2a2a2a; background:#1976d2; color:#fff; cursor:pointer }
+  button:hover { background:#1565c0 }
+  button:disabled { background:#444; color:#888; cursor:not-allowed }
   .meta { opacity:.9; font-size:14px }
-  .msg { min-height:22px }
+  .msg { min-height:22px; padding:8px; border-radius:8px }
   a { color:#69b4ff; text-decoration:none }
-  .success { color:#4caf50 } .error{ color:#f44336 }
+  .success { color:#4caf50; background:#1b4332; } 
+  .error{ color:#f44336; background:#4a1616; }
+  .loading { color:#ff9800; background:#332505; }
+  .debug { background:#333; padding:10px; border-radius:8px; margin:10px 0; font-family:monospace; font-size:12px; white-space:pre-wrap; }
 </style>
 </head>
 <body>
   <div class="header">
     <h1>Admin Panel - Today's Songs</h1>
-    <div class="meta">Manage pending and played songs. Auto-refresh every 5 seconds.</div>
+    <div class="meta">Manage pending and played songs. Auto-refresh every 10 seconds.</div>
   </div>
 
   <div class="wrap">
     <div class="msg" id="msg"></div>
+
+    <!-- Debug panel - remove after testing -->
+    <div class="card">
+      <h3>Debug Info</h3>
+      <div id="debug" class="debug">Loading...</div>
+      <button onclick="load(true)">Refresh with Debug</button>
+    </div>
 
     <div class="card">
       <h2>Pending (<span id="countPending">0</span>)</h2>
@@ -47,58 +59,123 @@ const playedEl  = document.getElementById('played');
 const countPending = document.getElementById('countPending');
 const countPlayed  = document.getElementById('countPlayed');
 const msg = document.getElementById('msg');
+const debugEl = document.getElementById('debug');
 
 function escapeHtml(s){
   return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-async function load(){
+function showMessage(text, type = '') {
+  msg.textContent = text;
+  msg.className = `msg ${type}`;
+}
+
+async function load(showDebug = false){
   try{
-    const res = await fetch(ENDPOINT + '?t=' + Date.now());
-    const j = await res.json();
+    if (showDebug) showMessage('Loading...', 'loading');
+    
+    const url = ENDPOINT + '?t=' + Date.now();
+    if (showDebug) debugEl.textContent += `\nFetching: ${url}`;
+    
+    const res = await fetch(url);
+    if (showDebug) debugEl.textContent += `\nResponse status: ${res.status}`;
+    
+    const responseText = await res.text();
+    if (showDebug) debugEl.textContent += `\nRaw response: ${responseText.substring(0, 500)}${responseText.length > 500 ? '...' : ''}`;
+    
+    let j;
+    try {
+      j = JSON.parse(responseText);
+    } catch (parseError) {
+      if (showDebug) debugEl.textContent += `\nJSON parse error: ${parseError.message}`;
+      throw new Error('Invalid JSON response from server');
+    }
+    
+    if (showDebug) debugEl.textContent += `\nParsed JSON: ${JSON.stringify(j, null, 2)}`;
+    
+    if (j.error) {
+      throw new Error(j.error);
+    }
+    
     const pending = j.pending || [];
     const played  = j.played  || [];
 
     countPending.textContent = pending.length;
     countPlayed.textContent  = played.length;
 
-    pendingEl.innerHTML = pending.length
-      ? pending.map(i => `<li>
-          <span><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}${ i.username ? ' ('+escapeHtml(i.username)+')' : '' }${ i.link ? ' — <a href="'+escapeHtml(i.link)+'" target="_blank" rel="noopener">link</a>' : ''}</span>
-          <button onclick="markPlayed('${escapeHtml(i.song)}','${escapeHtml(i.artist)}')">Mark Played</button>
-        </li>`).join('')
-      : '<li><em>None yet.</em></li>';
+    // Render pending songs
+    if (pending.length > 0) {
+      pendingEl.innerHTML = pending.map((i, index) => {
+        const songText = escapeHtml(i.song);
+        const artistText = escapeHtml(i.artist);
+        const usernameText = i.username ? ' (' + escapeHtml(i.username) + ')' : '';
+        const linkText = i.link ? ' — <a href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener">link</a>' : '';
+        
+        return `<li>
+          <span><strong>${songText}</strong> — ${artistText}${usernameText}${linkText}</span>
+          <button onclick="markPlayed('${songText.replace(/'/g, '\\\'').replace(/"/g, '\\"')}','${artistText.replace(/'/g, '\\\'').replace(/"/g, '\\"')}')">Mark Played</button>
+        </li>`;
+      }).join('');
+    } else {
+      pendingEl.innerHTML = '<li><em>No pending songs.</em></li>';
+    }
 
-    playedEl.innerHTML = played.length
-      ? played.map(i => `<li>
-          <span><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}</span>
-        </li>`).join('')
-      : '<li><em>None yet.</em></li>';
+    // Render played songs
+    if (played.length > 0) {
+      playedEl.innerHTML = played.map(i => {
+        const songText = escapeHtml(i.song);
+        const artistText = escapeHtml(i.artist);
+        const usernameText = i.username ? ' (' + escapeHtml(i.username) + ')' : '';
+        
+        return `<li>
+          <span><strong>${songText}</strong> — ${artistText}${usernameText}</span>
+        </li>`;
+      }).join('');
+    } else {
+      playedEl.innerHTML = '<li><em>No played songs yet.</em></li>';
+    }
 
-  }catch(e){
-    pendingEl.innerHTML = playedEl.innerHTML = '<li><em>Failed to load</em></li>';
+    if (showDebug) showMessage('✔ Loaded successfully', 'success');
+
+  } catch(e) {
+    console.error('Load error:', e);
+    if (showDebug) debugEl.textContent += `\nError: ${e.message}`;
+    pendingEl.innerHTML = '<li><em>Failed to load - check console</em></li>';
+    playedEl.innerHTML = '<li><em>Failed to load - check console</em></li>';
+    showMessage('✖ Failed to load: ' + e.message, 'error');
   }
 }
 
 async function markPlayed(song, artist){
-  msg.textContent = 'Updating…'; msg.className = '';
+  showMessage('Updating…', 'loading');
   try{
     const url = ENDPOINT + '?action=markPlayed&song=' + encodeURIComponent(song) + '&artist=' + encodeURIComponent(artist) + '&t=' + Date.now();
-    const res = await fetch(url);       // GET is fine for this admin action
+    console.log('Marking played:', url);
+    
+    const res = await fetch(url);
     const j = await res.json();
-    if (j.ok){ msg.textContent = '✔ Marked as played'; msg.className='success'; load(); }
-    else { msg.textContent = '✖ ' + (j.error || 'Update failed'); msg.className='error'; }
-  }catch(e){
-    msg.textContent = '✖ Network error'; msg.className='error';
+    
+    if (j.ok){ 
+      showMessage('✔ Marked as played', 'success');
+      // Reload data immediately
+      setTimeout(() => load(), 500);
+    } else { 
+      showMessage('✖ ' + (j.error || 'Update failed'), 'error');
+    }
+  } catch(e) {
+    console.error('Mark played error:', e);
+    showMessage('✖ Network error: ' + e.message, 'error');
   }
 }
 
+// Initial load
 load();
-setInterval(load, 5000);
+
+// Auto-refresh every 10 seconds (increased from 5 to reduce server load)
+setInterval(() => load(), 10000);
 </script>
 </body>
 </html>
-
 
 
 
