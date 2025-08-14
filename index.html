@@ -12,12 +12,16 @@
   .card { background:#141414; border:1px solid #222; border-radius:12px; padding:16px }
   input,button { font:inherit; padding:12px; border-radius:10px; border:1px solid #2a2a2a; background:#0f0f0f; color:#fff }
   button { background:#1976d2; border-color:#1976d2; cursor:pointer; font-weight:700 }
+  button:hover { background:#1565c0 }
+  button:disabled { background:#444; color:#888; cursor:not-allowed }
   .row { display:flex; gap:10px; flex-wrap:wrap }
   .list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
   .list li { padding:10px; border:1px solid #222; border-radius:10px }
   a { color:#69b4ff; text-decoration:none }
-  .success { color:#4caf50; margin-top:10px }
-  .error   { color:#f44336; margin-top:10px }
+  .success { color:#4caf50; margin-top:10px; background:#1b4332; padding:8px; border-radius:8px }
+  .error   { color:#f44336; margin-top:10px; background:#4a1616; padding:8px; border-radius:8px }
+  .loading { color:#ff9800; margin-top:10px; background:#332505; padding:8px; border-radius:8px }
+  .debug { background:#333; padding:10px; border-radius:8px; margin:10px 0; font-family:monospace; font-size:12px; white-space:pre-wrap; }
 </style>
 </head>
 <body>
@@ -34,18 +38,25 @@
         <input id="artist" placeholder="Artist *" required style="flex:2;min-width:160px">
         <input id="link" placeholder="(Optional) YouTube/Spotify link" style="flex:3;min-width:220px">
         <input id="username" placeholder="(Optional) Your TikTok @" style="flex:2;min-width:160px">
-        <button>Submit!</button>
+        <button type="submit">Submit!</button>
       </form>
       <div id="msg"></div>
     </div>
 
+    <!-- Debug panel - remove after testing -->
     <div class="card">
-      <h2>Today's Played Songs</h2>
+      <h3>Debug Info</h3>
+      <div id="debug" class="debug">Loading...</div>
+      <button onclick="load(true)" type="button">Refresh with Debug</button>
+    </div>
+
+    <div class="card">
+      <h2>Today's Played Songs (<span id="playedCount">0</span>)</h2>
       <ul id="played" class="list"></ul>
     </div>
 
     <div class="card">
-      <h2>Today's Suggested Songs</h2>
+      <h2>Today's Suggested Songs (<span id="suggestedCount">0</span>)</h2>
       <ul id="suggested" class="list"></ul>
     </div>
   </div>
@@ -57,11 +68,20 @@ const form = document.getElementById('form');
 const msg  = document.getElementById('msg');
 const played = document.getElementById('played');
 const suggested = document.getElementById('suggested');
+const debugEl = document.getElementById('debug');
+const playedCount = document.getElementById('playedCount');
+const suggestedCount = document.getElementById('suggestedCount');
+
+function showMessage(text, type = '') {
+  msg.innerHTML = `<div class="${type}">${text}</div>`;
+}
 
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  msg.textContent = 'Submitting…';
-  msg.className = '';
+  
+  const submitBtn = form.querySelector('button[type="submit"]');
+  submitBtn.disabled = true;
+  showMessage('Submitting…', 'loading');
 
   const payload = {
     song: document.getElementById('song').value.trim(),
@@ -70,25 +90,49 @@ form.addEventListener('submit', async (e) => {
     username: document.getElementById('username').value.trim()
   };
 
+  // Client-side validation
+  if (!payload.song || !payload.artist) {
+    showMessage('❌ Song and artist are required', 'error');
+    submitBtn.disabled = false;
+    return;
+  }
+
   try {
+    console.log('Submitting payload:', payload);
+    
     const res = await fetch(ENDPOINT, {
       method: 'POST',
-      // no headers: Apps Script reads raw JSON fine
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(payload)
     });
-    const j = await res.json();
+    
+    console.log('Response status:', res.status);
+    const responseText = await res.text();
+    console.log('Raw response:', responseText);
+    
+    let j;
+    try {
+      j = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error('Invalid response from server');
+    }
+    
     if (j.ok) {
-      msg.textContent = '✅ Added!';
-      msg.className = 'success';
+      showMessage('✅ Song added successfully!', 'success');
       form.reset();
-      load();
+      // Reload the lists after a short delay
+      setTimeout(() => load(), 1000);
     } else {
-      msg.textContent = '❌ ' + (j.error || 'Error, try again');
-      msg.className = 'error';
+      showMessage('❌ ' + (j.error || 'Error occurred, please try again'), 'error');
     }
   } catch (e) {
-    msg.textContent = '❌ Network error';
-    msg.className = 'error';
+    console.error('Submit error:', e);
+    showMessage('❌ Network error: ' + e.message, 'error');
+  } finally {
+    submitBtn.disabled = false;
   }
 });
 
@@ -96,30 +140,68 @@ function escapeHtml(s){
   return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
-function render(ul, items){
-  ul.innerHTML = items.length
-    ? items.map(i => `<li><strong>${escapeHtml(i.song)}</strong> — ${escapeHtml(i.artist)}${
-        i.username ? ' ('+escapeHtml(i.username)+')' : ''
-      }${ i.link ? ' — <a href="'+escapeHtml(i.link)+'" target="_blank" rel="noopener">link</a>' : ''}</li>`).join('')
-    : '<li><em>None yet.</em></li>';
-}
-
-async function load(){
-  try{
-    const res = await fetch(ENDPOINT + '?t=' + Date.now());
-    const j = await res.json();
-    render(suggested, j.pending || []);
-    render(played,    j.played  || []);
-  }catch(e){
-    suggested.innerHTML = played.innerHTML = '<li><em>Failed to load</em></li>';
+function render(ul, items, countEl){
+  countEl.textContent = items.length;
+  
+  if (items.length > 0) {
+    ul.innerHTML = items.map(i => {
+      const songText = escapeHtml(i.song);
+      const artistText = escapeHtml(i.artist);
+      const usernameText = i.username ? ' (' + escapeHtml(i.username) + ')' : '';
+      const linkText = i.link ? ' — <a href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener">link</a>' : '';
+      
+      return `<li><strong>${songText}</strong> — ${artistText}${usernameText}${linkText}</li>`;
+    }).join('');
+  } else {
+    ul.innerHTML = '<li><em>None yet.</em></li>';
   }
 }
 
-load();
+async function load(showDebug = false){
+  try{
+    const url = ENDPOINT + '?t=' + Date.now();
+    if (showDebug) debugEl.textContent += `\nFetching: ${url}`;
+    
+    const res = await fetch(url);
+    if (showDebug) debugEl.textContent += `\nResponse status: ${res.status}`;
+    
+    const responseText = await res.text();
+    if (showDebug) debugEl.textContent += `\nRaw response: ${responseText.substring(0, 500)}${responseText.length > 500 ? '...' : ''}`;
+    
+    let j;
+    try {
+      j = JSON.parse(responseText);
+    } catch (parseError) {
+      if (showDebug) debugEl.textContent += `\nJSON parse error: ${parseError.message}`;
+      throw new Error('Invalid JSON response from server');
+    }
+    
+    if (showDebug) debugEl.textContent += `\nParsed JSON: ${JSON.stringify(j, null, 2)}`;
+    
+    if (j.error) {
+      throw new Error(j.error);
+    }
+    
+    render(suggested, j.pending || [], suggestedCount);
+    render(played,    j.played  || [], playedCount);
+    
+    if (showDebug) debugEl.textContent += `\n✅ Successfully loaded ${(j.pending || []).length} pending and ${(j.played || []).length} played songs`;
+    
+  } catch(e) {
+    console.error('Load error:', e);
+    if (showDebug) debugEl.textContent += `\nError: ${e.message}`;
+    suggested.innerHTML = '<li><em>Failed to load - check console for details</em></li>';
+    played.innerHTML = '<li><em>Failed to load - check console for details</em></li>';
+    suggestedCount.textContent = '?';
+    playedCount.textContent = '?';
+  }
+}
+
+// Initial load
+load(true); // Load with debug info on first load
 </script>
 </body>
 </html>
-
 
 
 
