@@ -374,11 +374,6 @@
             text-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
 
-        .gallery-header p {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1.1rem;
-        }
-
         .upload-section {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 15px;
@@ -458,11 +453,6 @@
             margin-bottom: 1rem;
             color: white;
             text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        }
-
-        .rules-header p {
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 1.1rem;
         }
 
         .rule-item {
@@ -845,7 +835,7 @@
             // You'll need to register your app at https://developers.tiktok.com/
             
             const CLIENT_KEY = 'awxesmtodlrfwkck'; // Your TikTok client key
-            const REDIRECT_URI = encodeURIComponent(window.location.origin + '/auth/callback'); // Your callback URL
+            const REDIRECT_URI = encodeURIComponent(window.location.origin); // Your callback URL
             const SCOPE = 'user.info.basic'; // Required permissions
             const STATE = Math.random().toString(36).substring(2, 15); // Security state parameter
             
@@ -853,7 +843,7 @@
             localStorage.setItem('tiktok_auth_state', STATE);
             
             // TikTok OAuth URL
-            const authUrl = `https://www.tiktok.com/auth/authorize/` +
+            const authUrl = `https://www.tiktok.com/v2/auth/authorize/` +
                           `?client_key=${CLIENT_KEY}` +
                           `&scope=${SCOPE}` +
                           `&response_type=code` +
@@ -865,26 +855,17 @@
             loginBtn.innerHTML = '⏳ Redirecting to TikTok...';
             loginBtn.disabled = true;
             
-            // For testing: Show the OAuth URL and what you need to set up
-            setTimeout(() => {
-                const currentDomain = window.location.origin;
-                alert(`TikTok OAuth Setup:
-
-Your Client Key: awxesmtodlrfwkck ✅
-
-Next steps needed:
-1. In TikTok Developer Console, set redirect URI to: ${currentDomain}/auth/callback
-2. Set up a backend server to handle the OAuth callback
-3. The OAuth URL is ready: ${authUrl}
-
-For now, using demo mode:`);
+            // Check if this is production or demo
+            if (window.location.hostname === 'hersuggestion.github.io') {
+                // Production - use real TikTok OAuth
+                console.log('Production OAuth URL:', authUrl);
                 
-                // Show demo login form for testing
-                showDemoLoginForm();
-            }, 1000);
-            
-            // Uncomment this line when you have the backend callback handler ready:
-            // window.location.href = authUrl;
+                // Redirect to TikTok OAuth
+                window.location.href = authUrl;
+            } else {
+                // Development - use demo
+                setTimeout(() => showDemoLoginForm(), 1000);
+            }
         }
 
         function showDemoLoginForm() {
@@ -933,6 +914,9 @@ For now, using demo mode:`);
         function handleSuccessfulLogin(username) {
             currentUser = username;
             
+            // Store login state
+            localStorage.setItem('tiktok_user', username);
+            
             // Hide login section
             document.getElementById('loginSection').style.display = 'none';
             
@@ -956,67 +940,94 @@ For now, using demo mode:`);
             const storedState = localStorage.getItem('tiktok_auth_state');
             
             if (code && state === storedState) {
-                // Exchange code for access token via your backend
-                // Then get user info and call handleSuccessfulLogin(username)
+                // In production, send code to your backend to exchange for access token
+                // Backend should then return user info
                 console.log('TikTok OAuth code received:', code);
+                
+                // For demo, simulate successful login
+                alert('OAuth code received! In production, this would be sent to your backend.');
+                showDemoLoginForm();
             }
         }
 
         // Check if user is already logged in
         function checkLoginStatus() {
-            // Reset for demo purposes
-            currentUser = null;
-            
-            // Check for OAuth callback
+            // Check for OAuth callback first
             if (window.location.search.includes('code=')) {
                 handleTikTokCallback();
+                return;
+            }
+            
+            // Check if user was previously logged in (demo mode)
+            const savedUser = localStorage.getItem('tiktok_user');
+            if (savedUser) {
+                handleSuccessfulLogin(savedUser);
+            } else {
+                // Reset to login state
+                currentUser = null;
+                document.getElementById('loginSection').style.display = 'block';
+                document.getElementById('welcomeSection').style.display = 'none';
+                document.getElementById('songFormSection').style.display = 'none';
             }
         }
 
+        // Logout function
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('tiktok_user');
+            localStorage.removeItem('tiktok_auth_state');
+            checkLoginStatus();
+        }
+
         // Song form submission
-        document.getElementById('songForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // Check if user is logged in
-            if (!currentUser) {
-                alert('Please login with TikTok first!');
-                return;
-            }
-            
-            const messageEl = document.getElementById('songMessage');
-            messageEl.innerHTML = '<div class="message loading">Submitting...</div>';
-            
-            const payload = {
-                song: document.getElementById('songTitle').value.trim(),
-                artist: document.getElementById('artistName').value.trim(),
-                link: document.getElementById('songLink').value.trim(),
-                username: currentUser // Use the logged-in TikTok username
-            };
-            
-            // Validate required fields
-            if (!payload.song || !payload.artist || !payload.link) {
-                messageEl.innerHTML = '<div class="message error">❌ All fields are required!</div>';
-                return;
-            }
-            
-            try {
-                const response = await fetch(ENDPOINT, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+        document.addEventListener('DOMContentLoaded', function() {
+            const songForm = document.getElementById('songForm');
+            if (songForm) {
+                songForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    // Check if user is logged in
+                    if (!currentUser) {
+                        alert('Please login with TikTok first!');
+                        return;
+                    }
+                    
+                    const messageEl = document.getElementById('songMessage');
+                    messageEl.innerHTML = '<div class="message loading">Submitting...</div>';
+                    
+                    const payload = {
+                        song: document.getElementById('songTitle').value.trim(),
+                        artist: document.getElementById('artistName').value.trim(),
+                        link: document.getElementById('songLink').value.trim(),
+                        username: currentUser // Use the logged-in TikTok username
+                    };
+                    
+                    // Validate required fields
+                    if (!payload.song || !payload.artist || !payload.link) {
+                        messageEl.innerHTML = '<div class="message error">❌ All fields are required!</div>';
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch(ENDPOINT, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.ok) {
+                            messageEl.innerHTML = '<div class="message success">✅ Song added successfully!</div>';
+                            document.getElementById('songForm').reset();
+                            setTimeout(() => loadSongs(), 1000);
+                        } else {
+                            messageEl.innerHTML = '<div class="message error">❌ ' + (result.error || 'Error occurred, please try again') + '</div>';
+                        }
+                    } catch (error) {
+                        messageEl.innerHTML = '<div class="message error">❌ Network error: ' + error.message + '</div>';
+                    }
                 });
-                
-                const result = await response.json();
-                
-                if (result.ok) {
-                    messageEl.innerHTML = '<div class="message success">✅ Song added successfully!</div>';
-                    document.getElementById('songForm').reset();
-                    setTimeout(() => loadSongs(), 1000);
-                } else {
-                    messageEl.innerHTML = '<div class="message error">❌ ' + (result.error || 'Error occurred, please try again') + '</div>';
-                }
-            } catch (error) {
-                messageEl.innerHTML = '<div class="message error">❌ Network error: ' + error.message + '</div>';
             }
         });
 
@@ -1031,12 +1042,22 @@ For now, using demo mode:`);
                 
             } catch (error) {
                 console.error('Error loading songs:', error);
+                const suggestedContainer = document.getElementById('suggestedSongs');
+                const playedContainer = document.getElementById('playedSongs');
+                if (suggestedContainer) {
+                    suggestedContainer.innerHTML = '<div class="song-item"><div class="song-title">Failed to load songs</div></div>';
+                }
+                if (playedContainer) {
+                    playedContainer.innerHTML = '<div class="song-item"><div class="song-title">Failed to load songs</div></div>';
+                }
             }
         }
 
         function renderSongs(containerId, songs, countId) {
             const container = document.getElementById(containerId);
             const countEl = document.getElementById(countId);
+            
+            if (!container || !countEl) return;
             
             countEl.textContent = songs.length;
             
@@ -1080,8 +1101,6 @@ For now, using demo mode:`);
             checkLoginStatus();
         });
     </script>
-</body>
-</html>
 
 
 
