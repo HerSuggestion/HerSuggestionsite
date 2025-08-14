@@ -1,207 +1,835 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Today's Songs</title>
-<style>
-  body { background:#0b0b0b; color:#f5f5f5; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin:0 }
-  .header { background:#1976d2; padding:28px 16px; text-align:center }
-  .header h1 { margin:0 0 8px; font-size:40px }
-  .wrap { max-width:960px; margin:0 auto; padding:18px 16px; display:grid; gap:22px }
-  .card { background:#141414; border:1px solid #222; border-radius:12px; padding:16px }
-  input,button { font:inherit; padding:12px; border-radius:10px; border:1px solid #2a2a2a; background:#0f0f0f; color:#fff }
-  button { background:#1976d2; border-color:#1976d2; cursor:pointer; font-weight:700 }
-  button:hover { background:#1565c0 }
-  button:disabled { background:#444; color:#888; cursor:not-allowed }
-  .row { display:flex; gap:10px; flex-wrap:wrap }
-  .list { list-style:none; padding:0; margin:0; display:grid; gap:10px }
-  .list li { padding:10px; border:1px solid #222; border-radius:10px }
-  a { color:#69b4ff; text-decoration:none }
-  .success { color:#4caf50; margin-top:10px; background:#1b4332; padding:8px; border-radius:8px }
-  .error   { color:#f44336; margin-top:10px; background:#4a1616; padding:8px; border-radius:8px }
-  .loading { color:#ff9800; margin-top:10px; background:#332505; padding:8px; border-radius:8px }
-  .debug { background:#333; padding:10px; border-radius:8px; margin:10px 0; font-family:monospace; font-size:12px; white-space:pre-wrap; }
-</style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Your Music Hub</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: linear-gradient(135deg, #0a0a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated starry background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, #eee, transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(255,255,255,0.8), transparent),
+                radial-gradient(1px 1px at 90px 40px, #fff, transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(255,255,255,0.6), transparent),
+                radial-gradient(2px 2px at 160px 30px, #eee, transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: sparkle 20s linear infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes sparkle {
+            from { transform: translateY(0px); }
+            to { transform: translateY(-100px); }
+        }
+
+        /* Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(10, 10, 30, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #64b5f6;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: #f5f5f5;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: #64b5f6;
+            background: rgba(100, 181, 246, 0.1);
+        }
+
+        /* Mobile menu */
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: #f5f5f5;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        /* Main content */
+        .main-content {
+            position: relative;
+            z-index: 2;
+            padding-top: 80px;
+        }
+
+        /* Page sections */
+        .page-section {
+            display: none;
+            min-height: calc(100vh - 80px);
+            padding: 2rem;
+        }
+
+        .page-section.active {
+            display: block;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Home Page */
+        .home-hero {
+            text-align: center;
+            padding: 4rem 0;
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .home-hero h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #64b5f6, #42a5f5, #2196f3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 30px rgba(100, 181, 246, 0.3);
+        }
+
+        .home-hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+            max-width: 600px;
+        }
+
+        .about-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 3rem;
+            margin: 2rem 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .about-section h2 {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #64b5f6;
+        }
+
+        .about-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Song List Page */
+        .song-header {
+            background: linear-gradient(135deg, #1976d2, #42a5f5);
+            padding: 3rem 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            border-radius: 15px;
+        }
+
+        .song-header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .song-form {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .song-form h2 {
+            margin-bottom: 1.5rem;
+            color: #64b5f6;
+        }
+
+        .tiktok-login {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tiktok-btn {
+            background: linear-gradient(45deg, #ff0050, #fe2c55);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            justify-content: center;
+            min-width: 200px;
+        }
+
+        .tiktok-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 0, 80, 0.3);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        input[type="text"], input[type="url"] {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #f5f5f5;
+            font-size: 1rem;
+        }
+
+        input[type="text"]::placeholder, input[type="url"]::placeholder {
+            color: rgba(245, 245, 245, 0.6);
+        }
+
+        .submit-btn {
+            background: linear-gradient(45deg, #1976d2, #42a5f5);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            font-size: 1.1rem;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(25, 118, 210, 0.3);
+        }
+
+        .song-lists {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .song-list-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .song-list-section h2 {
+            color: #64b5f6;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .song-count {
+            background: rgba(100, 181, 246, 0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .song-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+        }
+
+        .song-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .song-title {
+            font-weight: bold;
+            color: #64b5f6;
+            margin-bottom: 0.3rem;
+        }
+
+        .song-artist {
+            color: #f5f5f5;
+            margin-bottom: 0.3rem;
+        }
+
+        .song-meta {
+            font-size: 0.9rem;
+            color: rgba(245, 245, 245, 0.7);
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .song-link {
+            color: #64b5f6;
+            text-decoration: none;
+        }
+
+        /* Fan Art Gallery */
+        .gallery-header {
+            text-align: center;
+            padding: 3rem 0;
+        }
+
+        .gallery-header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #64b5f6, #42a5f5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .upload-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 3rem;
+            margin: 2rem 0;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #64b5f6;
+            margin-bottom: 1rem;
+        }
+
+        .upload-btn {
+            background: linear-gradient(45deg, #1976d2, #42a5f5);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .art-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .art-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .art-image {
+            width: 100%;
+            height: 250px;
+            background: linear-gradient(45deg, #1976d2, #42a5f5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        /* Stream Rules */
+        .rules-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .rules-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .rules-header h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #64b5f6, #42a5f5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .rule-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .rule-number {
+            background: linear-gradient(45deg, #1976d2, #42a5f5);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .rule-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #64b5f6;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Message styling */
+        .message {
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .success { background: rgba(76, 175, 80, 0.2); color: #4caf50; border: 1px solid rgba(76, 175, 80, 0.3); }
+        .error { background: rgba(244, 67, 54, 0.2); color: #f44336; border: 1px solid rgba(244, 67, 54, 0.3); }
+        .loading { background: rgba(255, 152, 0, 0.2); color: #ff9800; border: 1px solid rgba(255, 152, 0, 0.3); }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background: rgba(10, 10, 30, 0.98);
+                flex-direction: column;
+                padding: 1rem;
+                gap: 0;
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .nav-links a {
+                padding: 1rem;
+                text-align: center;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .home-hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .song-header h1 {
+                font-size: 2rem;
+            }
+
+            .song-lists {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            .tiktok-login {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Today's Songs</h1>
-    <div>The songs listed here are in no particular order. The list is cleared every night.</div>
-  </div>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">Your Music Hub</div>
+            <button class="menu-toggle" onclick="toggleMenu()">☰</button>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#" onclick="showPage('home')" class="active">Home</a></li>
+                <li><a href="#" onclick="showPage('songlist')">Song List</a></li>
+                <li><a href="#" onclick="showPage('previously-played')">Previously Played Songs</a></li>
+                <li><a href="#" onclick="showPage('fanart')">Fan Art</a></li>
+                <li><a href="#" onclick="showPage('rules')">Stream Rules</a></li>
+            </ul>
+        </div>
+    </nav>
 
-  <div class="wrap">
-    <div class="card">
-      <h2>Suggest a Song</h2>
-      <form id="form" class="row">
-        <input id="song" placeholder="Song title *" required style="flex:2;min-width:180px">
-        <input id="artist" placeholder="Artist *" required style="flex:2;min-width:160px">
-        <input id="link" placeholder="(Optional) YouTube/Spotify link" style="flex:3;min-width:220px">
-        <input id="username" placeholder="(Optional) Your TikTok @" style="flex:2;min-width:160px">
-        <button type="submit">Submit!</button>
-      </form>
-      <div id="msg"></div>
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Home Page -->
+        <section id="home" class="page-section active">
+            <div class="container">
+                <div class="home-hero">
+                    <h1>Welcome to Your Music Hub!</h1>
+                    <p>Your go-to destination for amazing music, live streams, and community interaction!</p>
+                </div>
+                
+                <div class="about-section">
+                    <h2>About Me</h2>
+                    <div class="about-text">
+                        <p>Welcome everyone! My name is [Your Name] and I'm an energetic, passionate musician who loves sharing the joy of music with everyone!</p>
+                        <br>
+                        <p>I am a musician who has been playing for [X years] and I love connecting with my audience through live streams and interactive performances. Music is my passion and I love exploring different genres and taking song requests from viewers like you!</p>
+                        <br>
+                        <p>I started streaming because I wanted to share my love for music with others and create a fun, positive community where we can all enjoy great music together. Whether you're here to discover new songs or just hang out and listen, everyone is welcome!</p>
+                        <br>
+                        <p>I love playing your suggestions and it's so much fun getting to experience new music for the first time while performing it live for everyone!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Song List Page -->
+        <section id="songlist" class="page-section">
+            <div class="container">
+                <div class="song-header">
+                    <h1>Song List</h1>
+                    <p>The songs listed here are in no particular order. The list is cleared every night so if your song is missing from the list, please use the Song Suggestion Form below to re-add or manage your suggestion.</p>
+                </div>
+
+                <div class="song-form">
+                    <h2>Suggest a Song</h2>
+                    <div class="tiktok-login">
+                        <button class="tiktok-btn" onclick="loginWithTikTok()">
+                            🎵 Login with TikTok
+                        </button>
+                    </div>
+                    
+                    <form id="songForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="text" id="songTitle" placeholder="Song title *" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" id="artistName" placeholder="Artist *" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="url" id="songLink" placeholder="(Optional) YouTube/Spotify link">
+                            </div>
+                            <div class="form-group">
+                                <input type="text" id="username" placeholder="(Optional) Your TikTok @">
+                            </div>
+                        </div>
+                        <button type="submit" class="submit-btn">Submit!</button>
+                    </form>
+                    <div id="songMessage"></div>
+                </div>
+
+                <div class="song-lists">
+                    <div class="song-list-section">
+                        <h2>Today's Played Songs <span class="song-count" id="playedCount">0</span></h2>
+                        <div id="playedSongs"></div>
+                    </div>
+                    
+                    <div class="song-list-section">
+                        <h2>Today's Suggested Songs <span class="song-count" id="suggestedCount">0</span></h2>
+                        <div id="suggestedSongs"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Previously Played Songs Page -->
+        <section id="previously-played" class="page-section">
+            <div class="container">
+                <div class="song-header">
+                    <h1>Previously Played Songs</h1>
+                    <p>Browse through all the amazing songs that have been played in previous streams!</p>
+                </div>
+                
+                <div class="song-list-section">
+                    <h2>All Previously Played Songs</h2>
+                    <div id="allPlayedSongs">
+                        <div class="song-item">
+                            <div class="song-title">Boss Theme | 「刀刀所極之物」 by Godspeed</div>
+                            <div class="song-artist">Ato</div>
+                            <div class="song-meta">
+                                <span>3m4s</span>
+                                <a href="https://youtu.be/WAEIFgkj8v4" class="song-link" target="_blank">link</a>
+                                <span>ventress1243</span>
+                            </div>
+                        </div>
+                        <div class="song-item">
+                            <div class="song-title">Beneath The Final Light</div>
+                            <div class="song-artist">Frederik</div>
+                            <div class="song-meta">
+                                <span>8m10s</span>
+                                <a href="https://youtu.be/9lbgUhF_OJ0" class="song-link" target="_blank">link</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Fan Art Page -->
+        <section id="fanart" class="page-section">
+            <div class="container">
+                <div class="gallery-header">
+                    <h1>Welcome to Your Music Hub Gallery!</h1>
+                    <p>If you've created any fanart for the channel, you can upload them here to share with everyone else!</p>
+                </div>
+
+                <div class="upload-section">
+                    <div class="upload-icon">☁️</div>
+                    <h2>Share Your Fanart</h2>
+                    <p>Select the images to upload</p>
+                    <button class="upload-btn" onclick="uploadFanart()">Choose Files</button>
+                    <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.7;">JPG PNG BMP GIF WEBP | 5 MB ⚠️</p>
+                </div>
+
+                <div class="gallery-grid">
+                    <div class="art-item">
+                        <div class="art-image">Sample Fan Art 1</div>
+                    </div>
+                    <div class="art-item">
+                        <div class="art-image">Sample Fan Art 2</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stream Rules Page -->
+        <section id="rules" class="page-section">
+            <div class="rules-container">
+                <div class="rules-header">
+                    <h1>Stream Rules</h1>
+                    <p>Please follow these guidelines to keep our community fun and welcoming for everyone!</p>
+                </div>
+
+                <div class="rule-item">
+                    <div class="rule-number">1</div>
+                    <div class="rule-title">Be Respectful</div>
+                    <p>Treat everyone in the chat with kindness and respect. No harassment, hate speech, or bullying will be tolerated.</p>
+                </div>
+
+                <div class="rule-item">
+                    <div class="rule-number">2</div>
+                    <div class="rule-title">Keep It Clean</div>
+                    <p>Please keep the chat family-friendly. Avoid excessive profanity, inappropriate content, or spam.</p>
+                </div>
+
+                <div class="rule-item">
+                    <div class="rule-number">3</div>
+                    <div class="rule-title">Song Requests</div>
+                    <p>Use the song request form on this website. Please avoid requesting inappropriate songs or content that violates copyright guidelines.</p>
+                </div>
+
+                <div class="rule-item">
+                    <div class="rule-number">4</div>
+                    <div class="rule-title">No Self-Promotion</div>
+                    <p>Please don't promote your own content, social media, or other channels without permission.</p>
+                </div>
+
+                <div class="rule-item">
+                    <div class="rule-number">5</div>
+                    <div class="rule-title">Listen to Moderators</div>
+                    <p>Please follow instructions from moderators and the streamer. They're here to help keep the stream enjoyable for everyone.</p>
+                </div>
+
+                <div class="rule-item">
+                    <div class="rule-number">6</div>
+                    <div class="rule-title">Have Fun!</div>
+                    <p>Most importantly, relax and enjoy the music! This is a place to have a good time and discover new songs together.</p>
+                </div>
+            </div>
+        </section>
     </div>
 
-    <!-- Debug panel - remove after testing -->
-    <div class="card">
-      <h3>Debug Info</h3>
-      <div id="debug" class="debug">Loading...</div>
-      <button onclick="load(true)" type="button">Refresh with Debug</button>
-    </div>
+    <script>
+        // Your Google Apps Script endpoint
+        const ENDPOINT = "https://script.google.com/macros/s/AKfycbwehlwjPE4WXSKamnsnywAMbnYTQlWsG8duCzgyehW1136MZ6E9s_hqoKUtRv0fLJgB/exec";
 
-    <div class="card">
-      <h2>Today's Played Songs (<span id="playedCount">0</span>)</h2>
-      <ul id="played" class="list"></ul>
-    </div>
+        // Navigation functionality
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page-section').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageId).classList.add('active');
+            
+            // Update nav links
+            document.querySelectorAll('.nav-links a').forEach(link => {
+                link.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Load songs if on songlist page
+            if (pageId === 'songlist') {
+                loadSongs();
+            }
+            
+            // Close mobile menu
+            document.getElementById('navLinks').classList.remove('active');
+        }
 
-    <div class="card">
-      <h2>Today's Suggested Songs (<span id="suggestedCount">0</span>)</h2>
-      <ul id="suggested" class="list"></ul>
-    </div>
-  </div>
+        function toggleMenu() {
+            document.getElementById('navLinks').classList.toggle('active');
+        }
 
-<script>
-const ENDPOINT = "https://script.google.com/macros/s/AKfycbwehlwjPE4WXSKamnsnywAMbnYTQlWsG8duCzgyehW1136MZ6E9s_hqoKUtRv0fLJgB/exec";
+        // TikTok login (placeholder)
+        function loginWithTikTok() {
+            alert('TikTok login integration would go here. For now, you can use the form below without logging in.');
+        }
 
-const form = document.getElementById('form');
-const msg  = document.getElementById('msg');
-const played = document.getElementById('played');
-const suggested = document.getElementById('suggested');
-const debugEl = document.getElementById('debug');
-const playedCount = document.getElementById('playedCount');
-const suggestedCount = document.getElementById('suggestedCount');
+        // Song form submission
+        document.getElementById('songForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const messageEl = document.getElementById('songMessage');
+            messageEl.innerHTML = '<div class="message loading">Submitting...</div>';
+            
+            const payload = {
+                song: document.getElementById('songTitle').value.trim(),
+                artist: document.getElementById('artistName').value.trim(),
+                link: document.getElementById('songLink').value.trim(),
+                username: document.getElementById('username').value.trim()
+            };
+            
+            try {
+                const response = await fetch(ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    messageEl.innerHTML = '<div class="message success">✅ Song added successfully!</div>';
+                    document.getElementById('songForm').reset();
+                    setTimeout(() => loadSongs(), 1000);
+                } else {
+                    messageEl.innerHTML = '<div class="message error">❌ ' + (result.error || 'Error occurred, please try again') + '</div>';
+                }
+            } catch (error) {
+                messageEl.innerHTML = '<div class="message error">❌ Network error: ' + error.message + '</div>';
+            }
+        });
 
-function showMessage(text, type = '') {
-  msg.innerHTML = `<div class="${type}">${text}</div>`;
-}
+        // Load songs from API
+        async function loadSongs() {
+            try {
+                const response = await fetch(ENDPOINT + '?t=' + Date.now());
+                const data = await response.json();
+                
+                renderSongs('suggestedSongs', data.pending || [], 'suggestedCount');
+                renderSongs('playedSongs', data.played || [], 'playedCount');
+                
+            } catch (error) {
+                console.error('Error loading songs:', error);
+            }
+        }
 
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  const submitBtn = form.querySelector('button[type="submit"]');
-  submitBtn.disabled = true;
-  showMessage('Submitting…', 'loading');
+        function renderSongs(containerId, songs, countId) {
+            const container = document.getElementById(containerId);
+            const countEl = document.getElementById(countId);
+            
+            countEl.textContent = songs.
 
-  const payload = {
-    song: document.getElementById('song').value.trim(),
-    artist: document.getElementById('artist').value.trim(),
-    link: document.getElementById('link').value.trim(),
-    username: document.getElementById('username').value.trim()
-  };
-
-  // Client-side validation
-  if (!payload.song || !payload.artist) {
-    showMessage('❌ Song and artist are required', 'error');
-    submitBtn.disabled = false;
-    return;
-  }
-
-  try {
-    console.log('Submitting payload:', payload);
-    
-    const res = await fetch(ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(payload)
-    });
-    
-    console.log('Response status:', res.status);
-    const responseText = await res.text();
-    console.log('Raw response:', responseText);
-    
-    let j;
-    try {
-      j = JSON.parse(responseText);
-    } catch (parseError) {
-      console.error('JSON parse error:', parseError);
-      throw new Error('Invalid response from server');
-    }
-    
-    if (j.ok) {
-      showMessage('✅ Song added successfully!', 'success');
-      form.reset();
-      // Reload the lists after a short delay
-      setTimeout(() => load(), 1000);
-    } else {
-      showMessage('❌ ' + (j.error || 'Error occurred, please try again'), 'error');
-    }
-  } catch (e) {
-    console.error('Submit error:', e);
-    showMessage('❌ Network error: ' + e.message, 'error');
-  } finally {
-    submitBtn.disabled = false;
-  }
-});
-
-function escapeHtml(s){
-  return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
-
-function render(ul, items, countEl){
-  countEl.textContent = items.length;
-  
-  if (items.length > 0) {
-    ul.innerHTML = items.map(i => {
-      const songText = escapeHtml(i.song);
-      const artistText = escapeHtml(i.artist);
-      const usernameText = i.username ? ' (' + escapeHtml(i.username) + ')' : '';
-      const linkText = i.link ? ' — <a href="' + escapeHtml(i.link) + '" target="_blank" rel="noopener">link</a>' : '';
-      
-      return `<li><strong>${songText}</strong> — ${artistText}${usernameText}${linkText}</li>`;
-    }).join('');
-  } else {
-    ul.innerHTML = '<li><em>None yet.</em></li>';
-  }
-}
-
-async function load(showDebug = false){
-  try{
-    const url = ENDPOINT + '?t=' + Date.now();
-    if (showDebug) debugEl.textContent += `\nFetching: ${url}`;
-    
-    const res = await fetch(url);
-    if (showDebug) debugEl.textContent += `\nResponse status: ${res.status}`;
-    
-    const responseText = await res.text();
-    if (showDebug) debugEl.textContent += `\nRaw response: ${responseText.substring(0, 500)}${responseText.length > 500 ? '...' : ''}`;
-    
-    let j;
-    try {
-      j = JSON.parse(responseText);
-    } catch (parseError) {
-      if (showDebug) debugEl.textContent += `\nJSON parse error: ${parseError.message}`;
-      throw new Error('Invalid JSON response from server');
-    }
-    
-    if (showDebug) debugEl.textContent += `\nParsed JSON: ${JSON.stringify(j, null, 2)}`;
-    
-    if (j.error) {
-      throw new Error(j.error);
-    }
-    
-    render(suggested, j.pending || [], suggestedCount);
-    render(played,    j.played  || [], playedCount);
-    
-    if (showDebug) debugEl.textContent += `\n✅ Successfully loaded ${(j.pending || []).length} pending and ${(j.played || []).length} played songs`;
-    
-  } catch(e) {
-    console.error('Load error:', e);
-    if (showDebug) debugEl.textContent += `\nError: ${e.message}`;
-    suggested.innerHTML = '<li><em>Failed to load - check console for details</em></li>';
-    played.innerHTML = '<li><em>Failed to load - check console for details</em></li>';
-    suggestedCount.textContent = '?';
-    playedCount.textContent = '?';
-  }
-}
-
-// Initial load
-load(true); // Load with debug info on first load
-</script>
-</body>
-</html>
 
 
 
