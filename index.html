@@ -1,7 +1,6 @@
 <!DOCTYPE html>
-<html><head>
-<meta name="tiktok-developers-site-verification" content="IoL7TDe0q10H3o5FPBXQCGUTKHQn9gad">
-</head><body></body></html>
+<html lang="en">
+<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="tiktok-developers-site-verification" content="IoL7TDe0q10H3o5FPBXQCGUTKHQn9gad">
@@ -786,19 +785,17 @@
 
         // Navigation functionality
         function showPage(pageId) {
-            console.log('Switching to page:', pageId); // Debug log
+            console.log('Switching to page:', pageId);
             
             // Hide all pages
             document.querySelectorAll('.page-section').forEach(page => {
                 page.classList.remove('active');
-                console.log('Hiding page:', page.id); // Debug log
             });
             
             // Show selected page
             const targetPage = document.getElementById(pageId);
             if (targetPage) {
                 targetPage.classList.add('active');
-                console.log('Showing page:', pageId); // Debug log
             } else {
                 console.error('Page not found:', pageId);
             }
@@ -817,7 +814,7 @@
             // Load songs if on songlist page
             if (pageId === 'songlist') {
                 loadSongs();
-                checkLoginStatus(); // Reset login state when navigating to song list
+                checkLoginStatus();
             }
             
             // Close mobile menu
@@ -832,18 +829,13 @@
         let currentUser = null;
 
         function loginWithTikTok() {
-            // Real TikTok OAuth implementation
-            // You'll need to register your app at https://developers.tiktok.com/
+            const CLIENT_KEY = 'aw3xbibhm9m5etqq';
+            const REDIRECT_URI = encodeURIComponent('https://hersuggestion.github.io/HerSuggestionsite');
+            const SCOPE = 'user.info.basic';
+            const STATE = Math.random().toString(36).substring(2, 15);
             
-            const CLIENT_KEY = 'aw3xbibhm9m5etqq'; // Your TikTok client key
-            const REDIRECT_URI = encodeURIComponent('https://hersuggestion.github.io/HerSuggestionsite'); // Your callback URL
-            const SCOPE = 'user.info.basic'; // Required permissions
-            const STATE = Math.random().toString(36).substring(2, 15); // Security state parameter
-            
-            // Store state for validation
             localStorage.setItem('tiktok_auth_state', STATE);
             
-            // TikTok OAuth URL
             const authUrl = `https://www.tiktok.com/v2/auth/authorize/` +
                           `?client_key=${CLIENT_KEY}` +
                           `&scope=${SCOPE}` +
@@ -851,20 +843,14 @@
                           `&redirect_uri=${REDIRECT_URI}` +
                           `&state=${STATE}`;
             
-            // Show loading state
             const loginBtn = document.querySelector('.tiktok-btn');
             loginBtn.innerHTML = '⏳ Redirecting to TikTok...';
             loginBtn.disabled = true;
             
-            // Check if this is production or demo
             if (window.location.hostname === 'hersuggestion.github.io') {
-                // Production - use real TikTok OAuth
                 console.log('Production OAuth URL:', authUrl);
-                
-                // Redirect to TikTok OAuth
                 window.location.href = authUrl;
             } else {
-                // Development - use demo
                 setTimeout(() => showDemoLoginForm(), 1000);
             }
         }
@@ -897,12 +883,10 @@
                 return;
             }
             
-            // Add @ if not present
             if (!username.startsWith('@')) {
                 username = '@' + username;
             }
             
-            // Simulate API call delay
             const btn = event.target;
             btn.innerHTML = '⏳ Logging in...';
             btn.disabled = true;
@@ -914,26 +898,17 @@
 
         function handleSuccessfulLogin(username) {
             currentUser = username;
-            
-            // Store login state
             localStorage.setItem('tiktok_user', username);
             
-            // Hide login section
             document.getElementById('loginSection').style.display = 'none';
-            
-            // Show welcome message
             document.getElementById('usernameDisplay').textContent = username;
             document.getElementById('welcomeSection').style.display = 'block';
-            
-            // Show song form
             document.getElementById('songFormSection').style.display = 'block';
             
-            // Add welcome animation
             document.getElementById('welcomeSection').style.animation = 'fadeIn 0.5s ease-in';
             document.getElementById('songFormSection').style.animation = 'fadeIn 0.5s ease-in 0.2s both';
         }
 
-        // Handle OAuth callback (for real implementation)
         function handleTikTokCallback() {
             const urlParams = new URLSearchParams(window.location.search);
             const code = urlParams.get('code');
@@ -941,30 +916,22 @@
             const storedState = localStorage.getItem('tiktok_auth_state');
             
             if (code && state === storedState) {
-                // In production, send code to your backend to exchange for access token
-                // Backend should then return user info
                 console.log('TikTok OAuth code received:', code);
-                
-                // For demo, simulate successful login
                 alert('OAuth code received! In production, this would be sent to your backend.');
                 showDemoLoginForm();
             }
         }
 
-        // Check if user is already logged in
         function checkLoginStatus() {
-            // Check for OAuth callback first
             if (window.location.search.includes('code=')) {
                 handleTikTokCallback();
                 return;
             }
             
-            // Check if user was previously logged in (demo mode)
             const savedUser = localStorage.getItem('tiktok_user');
             if (savedUser) {
                 handleSuccessfulLogin(savedUser);
             } else {
-                // Reset to login state
                 currentUser = null;
                 document.getElementById('loginSection').style.display = 'block';
                 document.getElementById('welcomeSection').style.display = 'none';
@@ -972,7 +939,6 @@
             }
         }
 
-        // Logout function
         function logout() {
             currentUser = null;
             localStorage.removeItem('tiktok_user');
@@ -987,7 +953,6 @@
                 songForm.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     
-                    // Check if user is logged in
                     if (!currentUser) {
                         alert('Please login with TikTok first!');
                         return;
@@ -1000,10 +965,9 @@
                         song: document.getElementById('songTitle').value.trim(),
                         artist: document.getElementById('artistName').value.trim(),
                         link: document.getElementById('songLink').value.trim(),
-                        username: currentUser // Use the logged-in TikTok username
+                        username: currentUser
                     };
                     
-                    // Validate required fields
                     if (!payload.song || !payload.artist || !payload.link) {
                         messageEl.innerHTML = '<div class="message error">❌ All fields are required!</div>';
                         return;
@@ -1032,7 +996,6 @@
             }
         });
 
-        // Load songs from API
         async function loadSongs() {
             try {
                 const response = await fetch(ENDPOINT + '?t=' + Date.now());
@@ -1084,7 +1047,6 @@
             return div.innerHTML;
         }
 
-        // Upload fanart (placeholder)
         function uploadFanart() {
             const input = document.createElement('input');
             input.type = 'file';
@@ -1102,7 +1064,8 @@
             checkLoginStatus();
         });
     </script>
-
+</body>
+</html>
 
 
 
